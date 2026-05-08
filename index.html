@@ -12,8 +12,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* ══════════════════════════════════════════════════
-   COSA NOSTRA — SISTEMA v2.1 · iOS FIXED
-   Safe Areas · Zero Horizontal Scroll · Native Touch
+   COSA NOSTRA — SISTEMA v2.1 · GASTOS FIX APPLIED
+   Gastos now fully integrated into all financial metrics
 ══════════════════════════════════════════════════ */
 :root {
   --void:        #05060A;
@@ -45,15 +45,12 @@
   --radius:      2px;
   --pad-x:       clamp(12px, 3vw, 36px);
 
-  /* ── iOS Safe Area vars ── */
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left:   env(safe-area-inset-left, 0px);
   --safe-right:  env(safe-area-inset-right, 0px);
 
-  /* Effective nav height includes notch */
   --nav-h-total: calc(var(--nav-h) + var(--safe-top));
-  /* Effective bottom nav includes home indicator */
   --bottom-nav-h-total: calc(var(--bottom-nav-h) + var(--safe-bottom));
 
   --font-display: 'Bebas Neue', Impact, sans-serif;
@@ -62,210 +59,86 @@
   --font-body:    'Barlow', 'Helvetica Neue', sans-serif;
 }
 
-/* ═══ RESET — Zero horizontal overflow ═══ */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  /* Prevent any element from blowing out width */
-  min-width: 0;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; }
 
 html {
-  /* Prevent horizontal scroll at root */
-  overflow-x: hidden;
-  overflow-y: auto;
-  font-size: 16px;
-  /* iOS text size fix */
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+  overflow-x: hidden; overflow-y: auto; font-size: 16px;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   background: var(--void);
-  /* Use fill-available for iOS Safari height */
-  height: -webkit-fill-available;
-  height: fill-available;
+  height: -webkit-fill-available; height: fill-available;
 }
 
 body {
-  background: var(--void);
-  color: var(--paper);
-  font-family: var(--font-body);
-  font-weight: 300;
-  /* Strict: no horizontal scroll ever */
-  overflow-x: hidden;
-  overflow-y: auto;
-  /* Native-feeling momentum scroll */
+  background: var(--void); color: var(--paper);
+  font-family: var(--font-body); font-weight: 300;
+  overflow-x: hidden; overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /* iOS full height */
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-  min-height: fill-available;
+  min-height: 100vh; min-height: -webkit-fill-available; min-height: fill-available;
   -webkit-font-smoothing: antialiased;
-  /* Prevent tap highlight flash */
   -webkit-tap-highlight-color: transparent;
-  /* Prevent iOS zoom on double tap */
   touch-action: manipulation;
-  /* Left/right safe area padding on landscape */
-  padding-left: var(--safe-left);
-  padding-right: var(--safe-right);
+  padding-left: var(--safe-left); padding-right: var(--safe-right);
 }
 
-/* Hard stop: nothing wider than viewport */
-body > *, #app, #main {
-  max-width: 100vw;
-}
+body > *, #app, #main { max-width: 100vw; }
 
 ::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: var(--void); }
 ::-webkit-scrollbar-thumb { background: var(--gold); }
 
-p,h1,h2,h3,h4,span,div,a,li {
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
+p,h1,h2,h3,h4,span,div,a,li { word-break: break-word; overflow-wrap: break-word; }
 
 /* ═══ LOADER ═══ */
 #loader {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: var(--void);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
+  position: fixed; inset: 0; z-index: 99999;
+  background: var(--void); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
   transition: opacity 0.5s, visibility 0.5s;
-  /* Respect notch */
   padding-top: var(--safe-top);
 }
 #loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
-.loader-logo {
-  font-family: var(--font-display);
-  font-size: clamp(28px, 6vw, 48px);
-  letter-spacing: 0.15em;
-  color: var(--white);
-  text-align: center;
-}
+.loader-logo { font-family: var(--font-display); font-size: clamp(28px, 6vw, 48px); letter-spacing: 0.15em; color: var(--white); text-align: center; }
 .loader-logo em { color: var(--gold); font-style: normal; }
 .loader-bar { width: 180px; height: 1px; background: var(--steel); position: relative; overflow: hidden; }
-.loader-fill {
-  position: absolute; inset: 0;
-  background: var(--gold);
-  transform: translateX(-100%);
-  animation: loaderFill 1.3s ease forwards;
-}
+.loader-fill { position: absolute; inset: 0; background: var(--gold); transform: translateX(-100%); animation: loaderFill 1.3s ease forwards; }
 @keyframes loaderFill { to { transform: translateX(0); } }
-.loader-sub {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.3em;
-  color: var(--muted);
-  text-transform: uppercase;
-}
+.loader-sub { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase; }
 
 /* ═══ LOGIN ═══ */
 #login-screen {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 900;
-  background: var(--void);
-  align-items: center;
-  justify-content: center;
+  display: none; position: fixed; inset: 0; z-index: 900;
+  background: var(--void); align-items: center; justify-content: center;
   padding: 20px;
-  /* Safe area padding */
   padding-top: max(20px, var(--safe-top));
   padding-bottom: max(20px, var(--safe-bottom));
 }
 #login-screen.show { display: flex; }
-
-.login-panel {
-  width: 100%;
-  max-width: 380px;
-  background: var(--carbon);
-  border: 1px solid var(--gold-border);
-  border-top: 3px solid var(--gold);
-}
-.login-header {
-  padding: 28px 28px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  text-align: center;
-}
-.login-wordmark {
-  font-family: var(--font-display);
-  font-size: 36px;
-  letter-spacing: 0.12em;
-  color: var(--white);
-  margin-bottom: 4px;
-}
+.login-panel { width: 100%; max-width: 380px; background: var(--carbon); border: 1px solid var(--gold-border); border-top: 3px solid var(--gold); }
+.login-header { padding: 28px 28px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: center; }
+.login-wordmark { font-family: var(--font-display); font-size: 36px; letter-spacing: 0.12em; color: var(--white); margin-bottom: 4px; }
 .login-wordmark em { color: var(--gold); font-style: normal; }
-.login-sub {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.22em;
-  color: var(--muted);
-  text-transform: uppercase;
-}
+.login-sub { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.22em; color: var(--muted); text-transform: uppercase; }
 .login-body { padding: 24px 28px; }
 .lf { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-.lf label {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
+.lf label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
 .lf input {
-  background: var(--steel-dark);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--paper);
-  font-family: var(--font-mono);
-  font-size: 16px; /* Minimum 16px prevents iOS zoom on focus */
-  padding: 11px 12px;
-  outline: none;
-  width: 100%;
-  border-radius: 0; /* Remove iOS default radius */
-  -webkit-appearance: none;
-  appearance: none;
-  transition: border-color 0.15s;
-  min-height: 44px; /* Apple HIG minimum touch target */
+  background: var(--steel-dark); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--paper); font-family: var(--font-mono); font-size: 16px;
+  padding: 11px 12px; outline: none; width: 100%;
+  border-radius: 0; -webkit-appearance: none; appearance: none;
+  transition: border-color 0.15s; min-height: 44px;
 }
 .lf input:focus { border-color: var(--gold); background: rgba(200,152,10,0.04); }
-#l-err {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--danger);
-  letter-spacing: 0.08em;
-  display: none;
-  margin-bottom: 10px;
-}
+#l-err { font-family: var(--font-mono); font-size: 9px; color: var(--danger); letter-spacing: 0.08em; display: none; margin-bottom: 10px; }
 #l-err.show { display: block; }
 .btn-login {
-  width: 100%;
-  background: var(--gold);
-  border: none;
-  color: var(--void);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-weight: 700;
-  padding: 13px;
-  cursor: pointer;
-  transition: background 0.2s;
-  min-height: 48px; /* Larger touch target */
-  -webkit-appearance: none;
-  border-radius: 0;
+  width: 100%; background: var(--gold); border: none; color: var(--void);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; font-weight: 700; padding: 13px; cursor: pointer;
+  transition: background 0.2s; min-height: 48px; -webkit-appearance: none; border-radius: 0;
 }
 .btn-login:hover { background: var(--gold-light); }
-.login-footer {
-  padding: 12px 28px 20px;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  color: rgba(255,255,255,0.12);
-}
+.login-footer { padding: 12px 28px 20px; text-align: center; font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; color: rgba(255,255,255,0.12); }
 
 /* ═══ APP SHELL ═══ */
 #app { display: none; min-height: 100vh; min-height: -webkit-fill-available; }
@@ -273,432 +146,123 @@ p,h1,h2,h3,h4,span,div,a,li {
 
 /* ─── TOP NAV ─── */
 #top-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  /* Height = nav + notch */
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
   height: var(--nav-h-total);
-  background: rgba(5,6,10,0.97);
-  border-bottom: 1px solid rgba(200,152,10,0.2);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-  display: flex;
-  align-items: flex-end; /* Push content below notch */
-  padding: 0 12px calc(0px) 8px;
-  padding-bottom: 0;
-  gap: 8px;
-  /* Inner items sit above the notch area */
-  padding-top: var(--safe-top);
-  /* Keep content row at nav-h height */
+  background: rgba(5,6,10,0.97); border-bottom: 1px solid rgba(200,152,10,0.2);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  display: flex; align-items: flex-end;
+  padding: 0 12px 0 8px; gap: 8px; padding-top: var(--safe-top);
 }
-
-/* Flex row inside nav */
-.nav-inner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: var(--nav-h);
-  width: 100%;
-}
-
+.nav-inner { display: flex; align-items: center; gap: 8px; height: var(--nav-h); width: 100%; }
 .nav-hamburger {
-  width: 44px; height: 44px;
-  background: none;
-  border: 1px solid rgba(255,255,255,0.08);
-  color: var(--muted);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  flex-shrink: 0;
-  transition: border-color 0.15s;
-  -webkit-appearance: none;
-  border-radius: 0;
-  /* iOS minimum */
-  min-width: 44px;
-  min-height: 44px;
+  width: 44px; height: 44px; background: none;
+  border: 1px solid rgba(255,255,255,0.08); color: var(--muted);
+  cursor: pointer; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 5px; flex-shrink: 0; transition: border-color 0.15s;
+  -webkit-appearance: none; border-radius: 0; min-width: 44px; min-height: 44px;
 }
 .nav-hamburger:hover { border-color: var(--gold); color: var(--gold); }
 .hb-line { width: 14px; height: 1px; background: currentColor; transition: all 0.25s; }
 .nav-hamburger.open .hb-line:nth-child(1) { transform: translateY(6px) rotate(45deg); }
 .nav-hamburger.open .hb-line:nth-child(2) { opacity: 0; }
 .nav-hamburger.open .hb-line:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-
-.nav-brand {
-  font-family: var(--font-display);
-  font-size: clamp(14px, 3vw, 20px);
-  letter-spacing: 0.12em;
-  color: var(--white);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+.nav-brand { font-family: var(--font-display); font-size: clamp(14px, 3vw, 20px); letter-spacing: 0.12em; color: var(--white); white-space: nowrap; flex-shrink: 0; }
 .nav-brand em { color: var(--gold); font-style: normal; }
-.nav-brand span {
-  font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.14em;
-  color: var(--muted);
-  display: block;
-  text-transform: uppercase;
-  margin-top: -2px;
-}
-.nav-status {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  flex: 1;
-  overflow: hidden;
-  margin: 0 6px;
-  min-width: 0; /* Allow shrinking */
-}
-.status-pill {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 7px;
-  border: 1px solid rgba(255,255,255,0.07);
-  background: rgba(255,255,255,0.02);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-.status-pill-dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--success);
-  animation: pulse 2s infinite;
-  flex-shrink: 0;
-}
+.nav-brand span { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.14em; color: var(--muted); display: block; text-transform: uppercase; margin-top: -2px; }
+.nav-status { display: flex; gap: 5px; align-items: center; flex: 1; overflow: hidden; margin: 0 6px; min-width: 0; }
+.status-pill { display: flex; align-items: center; gap: 4px; padding: 3px 7px; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.02); flex-shrink: 0; white-space: nowrap; }
+.status-pill-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; flex-shrink: 0; }
 .status-pill-dot.gold { background: var(--gold); }
 .status-pill-dot.danger { background: var(--danger); }
-.status-pill-text {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  white-space: nowrap;
-}
+.status-pill-text { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.08em; color: var(--muted); white-space: nowrap; }
 .status-pill-text strong { color: var(--paper); }
 @media(max-width:600px) { .status-pill:not(:first-child) { display: none; } }
-
 .nav-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.nav-user {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  color: var(--gold);
-  border: 1px solid var(--gold-border);
-  padding: 4px 8px;
-  white-space: nowrap;
-  display: none;
-}
+.nav-user { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; color: var(--gold); border: 1px solid var(--gold-border); padding: 4px 8px; white-space: nowrap; display: none; }
 @media(min-width:768px) { .nav-user { display: inline-block; } }
-
-.nav-logout {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.08);
-  padding: 5px 9px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 44px;
-  min-width: 44px;
-  text-transform: uppercase;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.nav-logout { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; color: var(--muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); padding: 5px 9px; cursor: pointer; transition: all 0.15s; min-height: 44px; min-width: 44px; text-transform: uppercase; -webkit-appearance: none; border-radius: 0; }
 .nav-logout:hover { border-color: var(--danger); color: var(--danger); }
-
-.btn-corte-nav {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 5px 9px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 44px;
-  display: none;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.btn-corte-nav { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; color: var(--muted); background: transparent; border: 1px solid rgba(255,255,255,0.1); padding: 5px 9px; cursor: pointer; transition: all 0.15s; min-height: 44px; display: none; -webkit-appearance: none; border-radius: 0; }
 @media(min-width:768px) { .btn-corte-nav { display: inline-flex; align-items: center; gap: 4px; } }
 .btn-corte-nav:hover { border-color: var(--gold); color: var(--gold); }
 
 /* ─── SIDEBAR ─── */
-#sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 150;
-  background: rgba(5,6,10,0.7);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-}
+#sidebar-overlay { display: none; position: fixed; inset: 0; z-index: 150; background: rgba(5,6,10,0.7); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 #sidebar-overlay.show { display: block; }
-
 #sidebar {
-  position: fixed;
-  top: var(--nav-h-total); /* Below notch-aware nav */
-  left: 0;
-  bottom: 0;
-  width: var(--sidebar-w);
-  background: var(--ink);
+  position: fixed; top: var(--nav-h-total); left: 0; bottom: 0;
+  width: var(--sidebar-w); background: var(--ink);
   border-right: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  z-index: 151;
-  transform: translateX(-100%);
-  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
-  /* Bottom safe area */
+  display: flex; flex-direction: column; overflow-y: auto;
+  -webkit-overflow-scrolling: touch; z-index: 151;
+  transform: translateX(-100%); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
   padding-bottom: var(--safe-bottom);
 }
 #sidebar.open { transform: translateX(0); }
-
-@media(min-width:1024px) {
-  #sidebar { transform: translateX(0); }
-  #sidebar-overlay { display: none !important; }
-  #main { margin-left: var(--sidebar-w); }
-}
-
+@media(min-width:1024px) { #sidebar { transform: translateX(0); } #sidebar-overlay { display: none !important; } #main { margin-left: var(--sidebar-w); } }
 .sidebar-section { padding: 16px 0 8px; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.sidebar-label {
-  font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.2);
-  padding: 0 16px;
-  margin-bottom: 4px;
-}
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px; /* Taller for touch */
-  cursor: pointer;
-  transition: background 0.15s;
-  border-left: 2px solid transparent;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-  min-height: 48px; /* Apple HIG */
-}
+.sidebar-label { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 0 16px; margin-bottom: 4px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; transition: background 0.15s; border-left: 2px solid transparent; border-top: none; border-right: none; border-bottom: none; background: none; width: 100%; text-align: left; min-height: 48px; }
 .nav-item:hover { background: rgba(255,255,255,0.03); }
 .nav-item.active { background: rgba(200,152,10,0.07); border-left: 2px solid var(--gold); }
-.nav-item-icon {
-  width: 28px; height: 28px;
-  border: 1px solid rgba(255,255,255,0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: var(--muted);
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
+.nav-item-icon { width: 28px; height: 28px; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); flex-shrink: 0; transition: all 0.15s; }
 .nav-item.active .nav-item-icon { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
-.nav-item-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  transition: color 0.15s;
-}
+.nav-item-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); transition: color 0.15s; }
 .nav-item.active .nav-item-label { color: var(--paper); }
-
-.sidebar-corte-btn {
-  margin: 12px 16px;
-  width: calc(100% - 32px);
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--gold);
-  background: transparent;
-  border: 1px solid var(--gold-border);
-  padding: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 44px;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.sidebar-corte-btn { margin: 12px 16px; width: calc(100% - 32px); font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); background: transparent; border: 1px solid var(--gold-border); padding: 12px; cursor: pointer; transition: all 0.15s; min-height: 44px; -webkit-appearance: none; border-radius: 0; }
 .sidebar-corte-btn:hover { background: var(--gold-glow); }
-
 .sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.04); }
 .sf-version { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.12em; color: rgba(255,255,255,0.12); }
 
 /* ─── MAIN CONTENT ─── */
 #main {
-  margin-top: var(--nav-h-total);
-  min-height: calc(100vh - var(--nav-h-total));
-  /* Horizontal padding */
-  padding-left: clamp(12px, 3vw, 32px);
-  padding-right: clamp(12px, 3vw, 32px);
+  margin-top: var(--nav-h-total); min-height: calc(100vh - var(--nav-h-total));
+  padding-left: clamp(12px, 3vw, 32px); padding-right: clamp(12px, 3vw, 32px);
   padding-top: clamp(14px, 2.5vw, 32px);
-  /* Bottom: content + bottom nav + safe area */
   padding-bottom: calc(clamp(14px, 2.5vw, 32px) + var(--bottom-nav-h-total) + 8px);
-  transition: margin-left 0.25s;
-  /* Strictly no horizontal overflow */
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100vw;
+  transition: margin-left 0.25s; overflow-x: hidden; width: 100%; max-width: 100vw;
 }
-@media(min-width:1024px) {
-  #main { padding-bottom: clamp(14px, 2.5vw, 32px); }
-}
-
+@media(min-width:1024px) { #main { padding-bottom: clamp(14px, 2.5vw, 32px); } }
 .view { display: none; }
 .view.active { display: block; }
 
-/* ─── BOTTOM NAV (mobile) ─── */
+/* ─── BOTTOM NAV ─── */
 #bottom-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  /* Height = bar + home indicator */
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
   height: var(--bottom-nav-h-total);
-  background: rgba(13,15,20,0.97);
-  border-top: 1px solid rgba(200,152,10,0.15);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-  justify-content: space-around;
-  align-items: flex-start; /* Items align to top; safe area below */
+  background: rgba(13,15,20,0.97); border-top: 1px solid rgba(200,152,10,0.15);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  justify-content: space-around; align-items: flex-start;
   padding: 0 4px;
-  padding-left: max(4px, var(--safe-left));
-  padding-right: max(4px, var(--safe-right));
-  /* Items sit in the nav-h zone, home indicator is empty space below */
+  padding-left: max(4px, var(--safe-left)); padding-right: max(4px, var(--safe-right));
   padding-bottom: var(--safe-bottom);
 }
 @media(max-width:1023px) { #bottom-nav { display: flex; } }
-
-.bn-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px 10px;
-  flex: 1;
-  min-width: 0;
-  min-height: var(--bottom-nav-h); /* Touch area is the nav bar, not safe area */
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.bn-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; cursor: pointer; padding: 8px 10px; flex: 1; min-width: 0; min-height: var(--bottom-nav-h); -webkit-appearance: none; border-radius: 0; }
 .bn-icon { font-size: 16px; color: var(--mid); transition: color 0.15s; }
-.bn-label {
-  font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--mid);
-  transition: color 0.15s;
-}
-.bn-item.active .bn-icon,
-.bn-item.active .bn-label { color: var(--gold); }
+.bn-label { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mid); transition: color 0.15s; }
+.bn-item.active .bn-icon, .bn-item.active .bn-label { color: var(--gold); }
 .bn-item:active .bn-icon { transform: scale(0.9); }
 
 /* ─── PAGE HEADER ─── */
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: clamp(16px, 2.5vw, 28px);
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.page-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 5px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: clamp(16px, 2.5vw, 28px); padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.page-eyebrow { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
 .page-eyebrow::before { content: ''; width: 14px; height: 1px; background: var(--gold); }
-.page-title {
-  font-family: var(--font-display);
-  font-size: clamp(24px, 5vw, 40px);
-  letter-spacing: 0.06em;
-  color: var(--white);
-  line-height: 0.95;
-}
+.page-title { font-family: var(--font-display); font-size: clamp(24px, 5vw, 40px); letter-spacing: 0.06em; color: var(--white); line-height: 0.95; }
 .page-title em { font-style: italic; color: var(--gold); font-family: var(--font-serif); }
 .page-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 /* ─── METRICS GRID ─── */
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.06);
-  margin-bottom: clamp(16px, 2.5vw, 28px);
-  /* Prevent grid from exceeding viewport */
-  width: 100%;
-  max-width: 100%;
-}
-@media(max-width:480px) {
-  .metrics-grid { grid-template-columns: 1fr 1fr; }
-}
-.metric-card {
-  background: var(--carbon);
-  padding: clamp(12px, 2vw, 22px);
-  position: relative;
-  overflow: hidden;
-  transition: background 0.2s;
-  /* Prevent content overflow */
-  min-width: 0;
-}
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); margin-bottom: clamp(16px, 2.5vw, 28px); width: 100%; max-width: 100%; }
+@media(max-width:480px) { .metrics-grid { grid-template-columns: 1fr 1fr; } }
+.metric-card { background: var(--carbon); padding: clamp(12px, 2vw, 22px); position: relative; overflow: hidden; transition: background 0.2s; min-width: 0; }
 .metric-card:hover { background: rgba(200,152,10,0.04); }
 .metric-card.accent { border-left: 2px solid var(--gold); }
 .metric-card.danger { border-left: 2px solid var(--danger); }
 .metric-card.success { border-left: 2px solid var(--success); }
 .metric-card.purple { border-left: 2px solid var(--purple); }
-.metric-tag {
-  font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-.metric-value {
-  font-family: var(--font-display);
-  font-size: clamp(18px, 3.5vw, 32px);
-  letter-spacing: 0.04em;
-  color: var(--white);
-  line-height: 1;
-  margin-bottom: 3px;
-  /* Prevent long numbers from overflowing */
-  word-break: break-all;
-}
+.metric-tag { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.metric-value { font-family: var(--font-display); font-size: clamp(18px, 3.5vw, 32px); letter-spacing: 0.04em; color: var(--white); line-height: 1; margin-bottom: 3px; word-break: break-all; }
 .metric-value.success-val { color: var(--success); }
 .metric-value.danger-val { color: var(--danger); }
 .metric-value.purple-val { color: var(--purple); }
@@ -706,872 +270,171 @@ p,h1,h2,h3,h4,span,div,a,li {
 .metric-icon { position: absolute; right: 12px; top: 12px; font-size: 16px; opacity: 0.1; }
 
 /* ─── DATE FILTER BAR ─── */
-.date-filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-  padding: 10px 14px;
-  background: var(--carbon);
-  border: 1px solid rgba(255,255,255,0.06);
-  /* No overflow */
-  width: 100%;
-  overflow: hidden;
-}
-.date-filter-label {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.date-range-btn {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 8px 10px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 36px;
-  min-width: 44px;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.date-filter-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; padding: 10px 14px; background: var(--carbon); border: 1px solid rgba(255,255,255,0.06); width: 100%; overflow: hidden; }
+.date-filter-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.date-range-btn { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: transparent; border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px; cursor: pointer; transition: all 0.15s; min-height: 36px; min-width: 44px; -webkit-appearance: none; border-radius: 0; }
 .date-range-btn.active { background: var(--gold); color: var(--void); border-color: var(--gold); font-weight: 700; }
 .date-range-btn:hover:not(.active) { border-color: var(--gold); color: var(--gold); }
 .date-range-custom { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-
-/* ── iOS Date Input Fix ── */
-.date-input {
-  background: var(--steel-dark);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--paper);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 8px 7px;
-  outline: none;
-  /* Remove iOS date input default styles */
-  -webkit-appearance: none;
-  appearance: none;
-  border-radius: 0;
-  transition: border-color 0.15s;
-  min-height: 36px;
-  /* iOS date inputs need explicit width */
-  width: auto;
-  max-width: 140px;
-  /* Fix iOS color scheme */
-  color-scheme: dark;
-}
+.date-input { background: var(--steel-dark); border: 1px solid rgba(255,255,255,0.1); color: var(--paper); font-family: var(--font-mono); font-size: 11px; padding: 8px 7px; outline: none; -webkit-appearance: none; appearance: none; border-radius: 0; transition: border-color 0.15s; min-height: 36px; width: auto; max-width: 140px; color-scheme: dark; }
 .date-input:focus { border-color: var(--gold); }
-
-.growth-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  border: 1px solid;
-}
+.growth-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; font-family: var(--font-mono); font-size: 9px; border: 1px solid; }
 .growth-badge.up { border-color: rgba(40,199,111,0.3); color: var(--success); background: var(--success-glow); }
 .growth-badge.down { border-color: rgba(232,64,64,0.3); color: var(--danger); background: var(--danger-glow); }
 
-/* ─── TABLE — STRICT OVERFLOW ─── */
-.table-wrap {
-  border: 1px solid rgba(255,255,255,0.06);
-  overflow: hidden;
-  margin-bottom: 20px;
-  /* Full width, never overflow */
-  width: 100%;
-  max-width: 100%;
-}
-.table-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  background: var(--steel-dark);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.table-title {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-.table-search {
-  background: var(--steel-dark);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--paper);
-  font-family: var(--font-mono);
-  font-size: 16px; /* Prevent iOS zoom */
-  padding: 8px 10px;
-  outline: none;
-  -webkit-appearance: none;
-  border-radius: 0;
-  min-width: 0;
-  width: 160px;
-  transition: border-color 0.15s;
-}
+/* ─── TABLE ─── */
+.table-wrap { border: 1px solid rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 20px; width: 100%; max-width: 100%; }
+.table-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--steel-dark); border-bottom: 1px solid rgba(255,255,255,0.06); gap: 8px; flex-wrap: wrap; }
+.table-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.table-search { background: var(--steel-dark); border: 1px solid rgba(255,255,255,0.1); color: var(--paper); font-family: var(--font-mono); font-size: 16px; padding: 8px 10px; outline: none; -webkit-appearance: none; border-radius: 0; min-width: 0; width: 160px; transition: border-color 0.15s; }
 .table-search:focus { border-color: var(--gold); }
-
-/* Scroll wrapper for tables — horizontal scroll isolated */
-.table-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  width: 100%;
-  /* Prevents iOS from scrolling the whole page horizontally */
-  overscroll-behavior-x: contain;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: var(--font-body);
-  /* Table doesn't shrink below content */
-  min-width: 500px;
-}
-thead th {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding: 8px 12px;
-  text-align: left;
-  background: rgba(255,255,255,0.02);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  white-space: nowrap;
-}
-tbody tr {
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  transition: background 0.15s;
-}
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; overscroll-behavior-x: contain; }
+table { width: 100%; border-collapse: collapse; font-family: var(--font-body); min-width: 500px; }
+thead th { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); padding: 8px 12px; text-align: left; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.06); white-space: nowrap; }
+tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: rgba(200,152,10,0.04); }
-tbody td {
-  padding: 9px 12px;
-  font-size: 12px;
-  color: var(--light);
-  vertical-align: middle;
-  /* Prevent wide content from blowing out */
-  max-width: 200px;
-}
+tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-align: middle; max-width: 200px; }
 .td-mono { font-family: var(--font-mono); font-size: 10px; }
 .td-gold { color: var(--gold-light); font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
 .td-success { color: var(--success); font-family: var(--font-mono); font-size: 11px; }
 .td-danger { color: var(--danger); font-family: var(--font-mono); font-size: 11px; }
 .td-purple { color: var(--purple); font-family: var(--font-mono); font-size: 11px; }
-
-.stock-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 7px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  border: 1px solid;
-  white-space: nowrap;
-}
+.stock-badge { display: inline-flex; align-items: center; padding: 2px 7px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; border: 1px solid; white-space: nowrap; }
 .stock-badge.ok { border-color: rgba(40,199,111,0.3); color: var(--success); background: var(--success-glow); }
 .stock-badge.low { border-color: rgba(212,160,23,0.3); color: var(--amber); background: rgba(212,160,23,0.1); }
 .stock-badge.zero { border-color: rgba(232,64,64,0.3); color: var(--danger); background: var(--danger-glow); }
-.cat-badge {
-  display: inline-flex;
-  padding: 2px 7px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--muted);
-  background: rgba(255,255,255,0.03);
-  white-space: nowrap;
-}
-.status-badge {
-  display: inline-flex;
-  padding: 2px 9px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  border: 1px solid;
-  white-space: nowrap;
-}
+.cat-badge { display: inline-flex; padding: 2px 7px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; border: 1px solid rgba(255,255,255,0.1); color: var(--muted); background: rgba(255,255,255,0.03); white-space: nowrap; }
+.status-badge { display: inline-flex; padding: 2px 9px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; border: 1px solid; white-space: nowrap; }
 .status-badge.pending { border-color: rgba(212,160,23,0.3); color: var(--amber); background: rgba(212,160,23,0.1); }
 .status-badge.paid { border-color: rgba(40,199,111,0.3); color: var(--success); background: var(--success-glow); }
 .status-badge.overdue { border-color: rgba(232,64,64,0.3); color: var(--danger); background: var(--danger-glow); }
 
 /* ─── BUTTONS ─── */
-.btn-primary {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--void);
-  background: var(--gold);
-  border: none;
-  padding: 10px 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  min-height: 44px; /* Apple HIG */
-  white-space: nowrap;
-  position: relative;
-  overflow: hidden;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.btn-primary { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--void); background: var(--gold); border: none; padding: 10px 16px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; min-height: 44px; white-space: nowrap; position: relative; overflow: hidden; -webkit-appearance: none; border-radius: 0; }
 .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(200,152,10,0.35); }
 .btn-primary:active { transform: scale(0.97); }
-
-.btn-secondary {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.12);
-  padding: 9px 14px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.btn-secondary { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); background: transparent; border: 1px solid rgba(255,255,255,0.12); padding: 9px 14px; cursor: pointer; transition: all 0.15s; min-height: 44px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; -webkit-appearance: none; border-radius: 0; }
 .btn-secondary:hover { border-color: var(--paper); color: var(--paper); }
-
-.btn-danger {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(232,64,64,0.7);
-  background: transparent;
-  border: 1px solid rgba(232,64,64,0.2);
-  padding: 8px 9px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 36px;
-  min-width: 36px;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.btn-danger { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(232,64,64,0.7); background: transparent; border: 1px solid rgba(232,64,64,0.2); padding: 8px 9px; cursor: pointer; transition: all 0.15s; min-height: 36px; min-width: 36px; -webkit-appearance: none; border-radius: 0; }
 .btn-danger:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-glow); }
-
-.btn-success {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(40,199,111,0.8);
-  background: transparent;
-  border: 1px solid rgba(40,199,111,0.25);
-  padding: 8px 9px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 36px;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.btn-success { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(40,199,111,0.8); background: transparent; border: 1px solid rgba(40,199,111,0.25); padding: 8px 9px; cursor: pointer; transition: all 0.15s; min-height: 36px; -webkit-appearance: none; border-radius: 0; }
 .btn-success:hover { border-color: var(--success); color: var(--success); background: var(--success-glow); }
-
-.btn-purple {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(155,89,182,0.9);
-  background: transparent;
-  border: 1px solid rgba(155,89,182,0.3);
-  padding: 9px 14px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.btn-purple { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(155,89,182,0.9); background: transparent; border: 1px solid rgba(155,89,182,0.3); padding: 9px 14px; cursor: pointer; transition: all 0.15s; min-height: 44px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; -webkit-appearance: none; border-radius: 0; }
 .btn-purple:hover { border-color: var(--purple); color: var(--purple); background: rgba(155,89,182,0.1); }
-
-.btn-sm {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 7px 8px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 36px;
-  min-width: 36px;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.btn-sm { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); background: transparent; border: 1px solid rgba(255,255,255,0.1); padding: 7px 8px; cursor: pointer; transition: all 0.15s; min-height: 36px; min-width: 36px; -webkit-appearance: none; border-radius: 0; }
 .btn-sm:hover { border-color: var(--gold); color: var(--gold); }
 
 /* ─── MODALS ─── */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  background: rgba(5,6,10,0.9);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-  /* Safe area padding */
-  padding-top: max(12px, var(--safe-top));
-  padding-bottom: max(12px, var(--safe-bottom));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
+.modal-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(5,6,10,0.9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 12px; padding-top: max(12px, var(--safe-top)); padding-bottom: max(12px, var(--safe-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .modal-overlay.open { display: flex; }
-.modal-panel {
-  background: var(--carbon);
-  border: 1px solid var(--gold-border);
-  border-top: 2px solid var(--gold);
-  width: 100%;
-  max-width: 500px;
-  margin: auto;
-  position: relative;
-  /* Prevent modal from being wider than viewport */
-  max-width: min(500px, calc(100vw - 24px));
-}
+.modal-panel { background: var(--carbon); border: 1px solid var(--gold-border); border-top: 2px solid var(--gold); width: 100%; max-width: 500px; margin: auto; position: relative; max-width: min(500px, calc(100vw - 24px)); }
 .modal-panel.narrow { max-width: min(400px, calc(100vw - 24px)); }
 .modal-panel.corte { max-width: min(520px, calc(100vw - 24px)); }
-
-.modal-head {
-  background: var(--steel-dark);
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  gap: 10px;
-}
-.modal-head-title {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-.modal-close {
-  background: none;
-  border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.4);
-  width: 44px; height: 44px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  transition: all 0.15s;
-  flex-shrink: 0;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.modal-head { background: var(--steel-dark); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); gap: 10px; }
+.modal-head-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.modal-close { background: none; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 11px; transition: all 0.15s; flex-shrink: 0; -webkit-appearance: none; border-radius: 0; }
 .modal-close:hover { border-color: var(--gold); color: var(--gold); }
 .modal-body { padding: 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.modal-footer {
-  padding: 12px 18px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+.modal-footer { padding: 12px 18px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* ─── FORM FIELDS ─── */
 .fgrp { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-.fgrp label {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-/* ── iOS Input Normalization ── */
-.fgrp input,
-.fgrp select,
-.fgrp textarea {
-  background: var(--steel-dark);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--paper);
-  font-family: var(--font-mono);
-  /* 16px minimum CRITICAL: prevents iOS auto-zoom on focus */
-  font-size: 16px;
-  padding: 10px 11px;
-  outline: none;
-  transition: border-color 0.15s;
-  width: 100%;
-  /* Remove ALL iOS default styling */
-  -webkit-appearance: none;
-  appearance: none;
-  border-radius: 0;
-  min-height: 44px; /* Apple HIG touch target */
-}
-.fgrp input:focus,
-.fgrp select:focus,
-.fgrp textarea:focus { border-color: var(--gold); background: rgba(200,152,10,0.04); }
+.fgrp label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+.fgrp input, .fgrp select, .fgrp textarea { background: var(--steel-dark); border: 1px solid rgba(255,255,255,0.1); color: var(--paper); font-family: var(--font-mono); font-size: 16px; padding: 10px 11px; outline: none; transition: border-color 0.15s; width: 100%; -webkit-appearance: none; appearance: none; border-radius: 0; min-height: 44px; }
+.fgrp input:focus, .fgrp select:focus, .fgrp textarea:focus { border-color: var(--gold); background: rgba(200,152,10,0.04); }
 .fgrp textarea { min-height: 70px; resize: vertical; }
-
-/* Fix iOS select arrow */
-.fgrp select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2396A0B8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
-}
-
+.fgrp select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2396A0B8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media(max-width:480px) { .form-row { grid-template-columns: 1fr; } }
-
-.merror {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--danger);
-  letter-spacing: 0.08em;
-  display: none;
-  padding: 8px 10px;
-  background: var(--danger-glow);
-  border: 1px solid rgba(232,64,64,0.2);
-  margin-bottom: 8px;
-}
+.merror { font-family: var(--font-mono); font-size: 9px; color: var(--danger); letter-spacing: 0.08em; display: none; padding: 8px 10px; background: var(--danger-glow); border: 1px solid rgba(232,64,64,0.2); margin-bottom: 8px; }
 .merror.show { display: block; }
 
 /* ═══ POS ═══ */
-.pos-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-@media(min-width:900px) {
-  .pos-layout { display: grid; grid-template-columns: 1fr 340px; align-items: start; }
-}
-
-.pos-products-panel {
-  min-width: 0; /* Allow shrinking in grid */
-  overflow: hidden;
-}
-
+.pos-layout { display: flex; flex-direction: column; gap: 16px; }
+@media(min-width:900px) { .pos-layout { display: grid; grid-template-columns: 1fr 340px; align-items: start; } }
+.pos-products-panel { min-width: 0; overflow: hidden; }
 .pos-search-bar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-.pos-search-input {
-  flex: 1;
-  min-width: 0; /* Allow shrinking */
-  background: var(--carbon);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--paper);
-  font-family: var(--font-mono);
-  font-size: 16px; /* Prevent iOS zoom */
-  padding: 10px 12px;
-  outline: none;
-  -webkit-appearance: none;
-  border-radius: 0;
-  transition: border-color 0.15s;
-  min-height: 44px;
-}
+.pos-search-input { flex: 1; min-width: 0; background: var(--carbon); border: 1px solid rgba(255,255,255,0.1); color: var(--paper); font-family: var(--font-mono); font-size: 16px; padding: 10px 12px; outline: none; -webkit-appearance: none; border-radius: 0; transition: border-color 0.15s; min-height: 44px; }
 .pos-search-input:focus { border-color: var(--gold); }
-
-.pos-cat-filter {
-  display: flex;
-  gap: 0;
-  border: 1px solid rgba(255,255,255,0.08);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  flex-wrap: nowrap;
-  margin-bottom: 10px;
-  /* Prevent page horizontal scroll */
-  overscroll-behavior-x: contain;
-}
+.pos-cat-filter { display: flex; gap: 0; border: 1px solid rgba(255,255,255,0.08); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; margin-bottom: 10px; overscroll-behavior-x: contain; }
 .pos-cat-filter::-webkit-scrollbar { display: none; }
-
-.cat-btn {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: transparent;
-  border: none;
-  border-right: 1px solid rgba(255,255,255,0.08);
-  padding: 10px 14px;
-  cursor: pointer;
-  white-space: nowrap;
-  min-height: 44px; /* Apple HIG */
-  transition: all 0.15s;
-  flex-shrink: 0;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.cat-btn { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: transparent; border: none; border-right: 1px solid rgba(255,255,255,0.08); padding: 10px 14px; cursor: pointer; white-space: nowrap; min-height: 44px; transition: all 0.15s; flex-shrink: 0; -webkit-appearance: none; border-radius: 0; }
 .cat-btn:last-child { border-right: none; }
 .cat-btn.active { background: var(--gold); color: var(--void); font-weight: 700; }
 .cat-btn:hover:not(.active) { color: var(--paper); background: rgba(255,255,255,0.04); }
-
-/* Product grid — responsive, no overflow */
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 1px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.06);
-  max-height: calc(100vh - 320px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  width: 100%;
-}
-@media(max-width:480px) {
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
-    max-height: none;
-  }
-}
-
-.product-card {
-  background: var(--carbon);
-  padding: 14px 12px;
-  cursor: pointer;
-  transition: background 0.1s;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  /* Prevent overflow */
-  min-width: 0;
-  overflow: hidden;
-}
+.products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); max-height: calc(100vh - 320px); overflow-y: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+@media(max-width:480px) { .products-grid { grid-template-columns: repeat(2, 1fr); max-height: none; } }
+.product-card { background: var(--carbon); padding: 14px 12px; cursor: pointer; transition: background 0.1s; position: relative; display: flex; flex-direction: column; gap: 5px; user-select: none; -webkit-tap-highlight-color: transparent; min-width: 0; overflow: hidden; }
 .product-card:active { background: rgba(200,152,10,0.12); }
 .product-card:hover { background: rgba(200,152,10,0.07); }
 .product-card.out-of-stock { opacity: 0.4; cursor: not-allowed; }
-.product-card.out-of-stock:active,
-.product-card.out-of-stock:hover { background: var(--carbon); }
-
+.product-card.out-of-stock:active, .product-card.out-of-stock:hover { background: var(--carbon); }
 .pc-cat { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .pc-name { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--paper); line-height: 1.3; }
 .pc-price { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.04em; color: var(--gold); line-height: 1; }
 .pc-stock { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.08em; color: var(--muted); }
 .pc-stock.low { color: var(--amber); }
 .pc-stock.zero { color: var(--danger); }
-
-.pc-add {
-  position: absolute;
-  top: 8px; right: 8px;
-  width: 32px; height: 32px; /* Larger for touch */
-  background: var(--gold);
-  color: var(--void);
-  border: none;
-  cursor: pointer;
-  font-size: 20px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.1s;
-  border-radius: 0;
-  -webkit-appearance: none;
-}
+.pc-add { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; background: var(--gold); color: var(--void); border: none; cursor: pointer; font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; border-radius: 0; -webkit-appearance: none; }
 .pc-add:active { transform: scale(0.85); }
 @media(hover:hover) { .pc-add { opacity: 0; } .product-card:hover .pc-add { opacity: 1; } }
 @media(hover:none) { .pc-add { opacity: 1; } }
 
 /* ══ CART ══ */
-.cart-panel {
-  background: var(--carbon);
-  border: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-@media(min-width:900px) {
-  .cart-panel {
-    position: sticky;
-    top: calc(var(--nav-h-total) + 16px);
-    max-height: calc(100vh - var(--nav-h-total) - 32px);
-    overflow: hidden;
-  }
-}
-
-.cart-header {
-  padding: 12px 14px;
-  background: var(--steel-dark);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+.cart-panel { background: var(--carbon); border: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; min-width: 0; }
+@media(min-width:900px) { .cart-panel { position: sticky; top: calc(var(--nav-h-total) + 16px); max-height: calc(100vh - var(--nav-h-total) - 32px); overflow: hidden; } }
+.cart-header { padding: 12px 14px; background: var(--steel-dark); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; }
 .cart-header-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
 .cart-count { font-family: var(--font-display); font-size: 14px; letter-spacing: 0.06em; color: var(--white); }
-
-.cart-items {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 4px 0;
-  min-height: 80px;
-}
-.cart-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 80px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: rgba(255,255,255,0.15);
-  text-transform: uppercase;
-  flex-direction: column;
-  gap: 6px;
-}
+.cart-items { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 0; min-height: 80px; }
+.cart-empty { display: flex; align-items: center; justify-content: center; height: 80px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.15); text-transform: uppercase; flex-direction: column; gap: 6px; }
 .cart-empty-icon { font-size: 22px; opacity: 0.2; }
-
-.cart-item {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  gap: 6px;
-  align-items: center;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  transition: background 0.1s;
-}
+.cart-item { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.1s; }
 .cart-item:hover { background: rgba(255,255,255,0.02); }
 .ci-name { font-size: 12px; font-weight: 500; color: var(--paper); line-height: 1.3; }
 .ci-uprice { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
-
 .ci-qty-ctrl { display: flex; align-items: center; gap: 3px; }
-.ci-qty-btn {
-  width: 32px; height: 32px; /* Larger touch target */
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--paper);
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.1s;
-  font-family: var(--font-mono);
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.ci-qty-btn { width: 32px; height: 32px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--paper); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.1s; font-family: var(--font-mono); -webkit-appearance: none; border-radius: 0; }
 .ci-qty-btn:active { border-color: var(--gold); color: var(--gold); }
 .ci-qty { font-family: var(--font-mono); font-size: 11px; color: var(--paper); width: 22px; text-align: center; }
 .ci-total { font-family: var(--font-mono); font-size: 11px; color: var(--gold-light); font-weight: 700; white-space: nowrap; }
-.ci-remove {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: rgba(232,64,64,0.4);
-  font-size: 14px;
-  transition: color 0.15s;
-  padding: 6px 8px; /* Bigger touch area */
-  min-width: 32px;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.ci-remove { background: none; border: none; cursor: pointer; color: rgba(232,64,64,0.4); font-size: 14px; transition: color 0.15s; padding: 6px 8px; min-width: 32px; min-height: 32px; display: flex; align-items: center; justify-content: center; }
 .ci-remove:hover, .ci-remove:active { color: var(--danger); }
-
-.cart-summary {
-  padding: 12px 14px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  background: var(--steel-dark);
-}
+.cart-summary { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06); background: var(--steel-dark); }
 .cart-sum-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .cart-sum-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .cart-sum-value { font-family: var(--font-mono); font-size: 11px; color: var(--light); }
 .cart-total-row { display: flex; justify-content: space-between; align-items: center; padding-top: 9px; margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.08); }
 .cart-total-label { font-family: var(--font-display); font-size: 14px; letter-spacing: 0.08em; color: var(--white); }
 .cart-total-value { font-family: var(--font-display); font-size: 24px; letter-spacing: 0.06em; color: var(--gold); }
-
-/* ══ STICKY CART ACTIONS — iOS FIXED ══
-   On mobile: fixed above bottom-nav, respects safe-area-inset-bottom.
-   The button is ALWAYS reachable above the bottom nav and home indicator.
-*/
-.cart-actions {
-  padding: 10px 14px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-@media(max-width:899px) {
-  .cart-actions {
-    position: -webkit-sticky; /* iOS Safari */
-    position: sticky;
-    /* Sit just above bottom nav */
-    bottom: var(--bottom-nav-h-total);
-    background: var(--ink);
-    border-top: 2px solid rgba(200,152,10,0.25);
-    z-index: 10;
-    /* Internal padding normal; safe area handled by bottom offset */
-    padding: 10px 14px;
-  }
-}
+.cart-actions { padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 6px; }
+@media(max-width:899px) { .cart-actions { position: -webkit-sticky; position: sticky; bottom: var(--bottom-nav-h-total); background: var(--ink); border-top: 2px solid rgba(200,152,10,0.25); z-index: 10; padding: 10px 14px; } }
 
 /* ═══ PAYMENT MODAL ═══ */
-.pay-label {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 8px;
-}
-.pay-total-display {
-  background: var(--steel-dark);
-  border: 1px solid var(--gold-border);
-  padding: 12px 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
+.pay-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.pay-total-display { background: var(--steel-dark); border: 1px solid var(--gold-border); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .pay-total-display-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .pay-total-display-value { font-family: var(--font-display); font-size: 26px; letter-spacing: 0.08em; color: var(--gold); }
-
-.pay-received-wrap {
-  display: flex;
-  gap: 0;
-  border: 1px solid rgba(255,255,255,0.1);
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-.pay-currency {
-  background: rgba(200,152,10,0.12);
-  border-right: 1px solid rgba(200,152,10,0.2);
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  font-family: var(--font-display);
-  font-size: 18px;
-  letter-spacing: 0.1em;
-  color: var(--gold);
-  flex-shrink: 0;
-}
-#pay-received {
-  flex: 1;
-  background: var(--steel-dark);
-  border: none;
-  color: var(--paper);
-  font-family: var(--font-display);
-  font-size: 26px;
-  letter-spacing: 0.06em;
-  padding: 10px 14px;
-  outline: none;
-  min-height: 56px;
-  /* iOS: numeric keyboard, no zoom */
-  -webkit-appearance: none;
-  border-radius: 0;
-  width: 100%;
-}
+.pay-received-wrap { display: flex; gap: 0; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; margin-bottom: 10px; }
+.pay-currency { background: rgba(200,152,10,0.12); border-right: 1px solid rgba(200,152,10,0.2); padding: 0 12px; display: flex; align-items: center; font-family: var(--font-display); font-size: 18px; letter-spacing: 0.1em; color: var(--gold); flex-shrink: 0; }
+#pay-received { flex: 1; background: var(--steel-dark); border: none; color: var(--paper); font-family: var(--font-display); font-size: 26px; letter-spacing: 0.06em; padding: 10px 14px; outline: none; min-height: 56px; -webkit-appearance: none; border-radius: 0; width: 100%; }
 #pay-received:focus { background: rgba(200,152,10,0.04); }
-
-.change-display {
-  background: rgba(40,199,111,0.08);
-  border: 1px solid rgba(40,199,111,0.2);
-  padding: 12px 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
+.change-display { background: rgba(40,199,111,0.08); border: 1px solid rgba(40,199,111,0.2); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .change-display.negative { background: var(--danger-glow); border-color: rgba(232,64,64,0.2); }
 .change-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .change-value { font-family: var(--font-display); font-size: 26px; letter-spacing: 0.06em; color: var(--success); }
 .change-value.negative { color: var(--danger); }
-
 .pay-shortcuts { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
-.pay-shortcut {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.02);
-  padding: 9px 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 44px; /* Apple HIG */
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.pay-shortcut { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; color: var(--muted); border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); padding: 9px 12px; cursor: pointer; transition: all 0.15s; min-height: 44px; -webkit-appearance: none; border-radius: 0; }
 .pay-shortcut:active, .pay-shortcut:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
-
 .payment-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 12px 0; }
-.btn-confirm-pay {
-  width: 100%;
-  background: var(--success);
-  border: none;
-  color: var(--void);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-weight: 700;
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-height: 56px; /* Extra large — primary action */
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.btn-confirm-pay { width: 100%; background: var(--success); border: none; color: var(--void); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; padding: 16px; cursor: pointer; transition: all 0.2s; min-height: 56px; -webkit-appearance: none; border-radius: 0; }
 .btn-confirm-pay:hover { background: #30d67a; }
 .btn-confirm-pay:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-confirm-pay:active:not(:disabled) { transform: scale(0.98); }
-
-.credit-toggle {
-  display: flex;
-  gap: 0;
-  border: 1px solid rgba(255,255,255,0.1);
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-.credit-toggle-btn {
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: transparent;
-  color: var(--muted);
-  border: none;
-  padding: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 44px;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
+.credit-toggle { display: flex; gap: 0; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; margin-bottom: 12px; }
+.credit-toggle-btn { flex: 1; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; background: transparent; color: var(--muted); border: none; padding: 12px; cursor: pointer; transition: all 0.15s; min-height: 44px; -webkit-appearance: none; border-radius: 0; }
 .credit-toggle-btn.active { background: var(--gold); color: var(--void); font-weight: 700; }
 .credit-toggle-btn.active.credit { background: var(--purple); }
 .credit-fields { display: none; }
@@ -1579,24 +442,8 @@ tbody td {
 
 /* ═══ CORTE DE CAJA ═══ */
 .corte-section { margin-bottom: 14px; }
-.corte-section-title {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 8px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.corte-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 7px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  gap: 8px;
-}
+.corte-section-title { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.corte-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); gap: 8px; }
 .corte-row-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; color: var(--muted); flex: 1; }
 .corte-row-value { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em; color: var(--white); flex-shrink: 0; }
 .corte-resultado { padding: 14px; margin-top: 12px; text-align: center; }
@@ -1610,102 +457,30 @@ tbody td {
 .corte-resultado.exacto .corte-resultado-value { color: var(--gold); }
 
 /* ═══ CHARTS ═══ */
-.charts-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  margin-bottom: 18px;
-  width: 100%;
-}
+.charts-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 18px; width: 100%; }
 @media(min-width:800px) { .charts-grid { grid-template-columns: 1fr 1fr; } }
-.chart-card {
-  background: var(--carbon);
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 18px;
-  min-width: 0; /* Prevent chart overflow */
-  overflow: hidden;
-}
-.chart-card-title {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 14px;
-}
-.chart-container {
-  position: relative;
-  height: 200px;
-  width: 100%;
-  /* Strict containment */
-  overflow: hidden;
-}
+.chart-card { background: var(--carbon); border: 1px solid rgba(255,255,255,0.06); padding: 18px; min-width: 0; overflow: hidden; }
+.chart-card-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+.chart-container { position: relative; height: 200px; width: 100%; overflow: hidden; }
 
 /* ═══ ROI ═══ */
-.roi-display {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.06);
-  margin-bottom: 18px;
-  width: 100%;
-}
+.roi-display { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); margin-bottom: 18px; width: 100%; }
 @media(max-width:600px) { .roi-display { grid-template-columns: 1fr; } }
 .roi-cell { background: var(--carbon); padding: 18px 20px; min-width: 0; }
 .roi-cell-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
-.roi-cell-value {
-  font-family: var(--font-display);
-  font-size: clamp(22px, 4vw, 36px);
-  letter-spacing: 0.04em;
-  line-height: 1;
-  color: var(--white);
-  word-break: break-all; /* Long numbers don't overflow */
-}
+.roi-cell-value { font-family: var(--font-display); font-size: clamp(22px, 4vw, 36px); letter-spacing: 0.04em; line-height: 1; color: var(--white); word-break: break-all; }
 .roi-cell-value.gold { color: var(--gold); }
 .roi-cell-value.success { color: var(--success); }
 .roi-cell-value.danger { color: var(--danger); }
 .roi-cell-sub { font-family: var(--font-mono); font-size: 7px; color: rgba(255,255,255,0.18); margin-top: 4px; letter-spacing: 0.06em; }
 
 /* ═══ GASTOS ═══ */
-.gasto-cat-badge {
-  display: inline-flex;
-  padding: 2px 7px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  border: 1px solid rgba(232,64,64,0.25);
-  color: var(--danger);
-  background: rgba(232,64,64,0.07);
-  white-space: nowrap;
-}
+.gasto-cat-badge { display: inline-flex; padding: 2px 7px; font-family: var(--font-mono); font-size: 9px; border: 1px solid rgba(232,64,64,0.25); color: var(--danger); background: rgba(232,64,64,0.07); white-space: nowrap; }
 
 /* ═══ TOAST ═══ */
-#toast-container {
-  position: fixed;
-  /* Above bottom nav + safe area */
-  bottom: calc(var(--bottom-nav-h-total) + 16px);
-  right: 16px;
-  right: max(16px, calc(var(--safe-right) + 16px));
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  pointer-events: none;
-}
+#toast-container { position: fixed; bottom: calc(var(--bottom-nav-h-total) + 16px); right: 16px; right: max(16px, calc(var(--safe-right) + 16px)); z-index: 999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
 @media(min-width:1024px) { #toast-container { bottom: 24px; right: 24px; } }
-.toast {
-  background: var(--carbon);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-left: 3px solid var(--gold);
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 200px;
-  max-width: min(300px, calc(100vw - 40px));
-  animation: toastIn 0.3s ease forwards;
-  pointer-events: auto;
-}
+.toast { background: var(--carbon); border: 1px solid rgba(255,255,255,0.1); border-left: 3px solid var(--gold); padding: 10px 14px; display: flex; align-items: center; gap: 8px; min-width: 200px; max-width: min(300px, calc(100vw - 40px)); animation: toastIn 0.3s ease forwards; pointer-events: auto; }
 .toast.success { border-left-color: var(--success); }
 .toast.error { border-left-color: var(--danger); }
 .toast-icon { font-size: 13px; flex-shrink: 0; }
@@ -1714,19 +489,7 @@ tbody td {
 @keyframes toastOut { to { opacity: 0; transform: translateX(14px); } }
 
 /* ═══ SUCCESS OVERLAY ═══ */
-.sale-success-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 800;
-  background: rgba(5,6,10,0.95);
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 14px;
-  /* Safe area */
-  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
-}
+.sale-success-overlay { display: none; position: fixed; inset: 0; z-index: 800; background: rgba(5,6,10,0.95); align-items: center; justify-content: center; flex-direction: column; gap: 14px; padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
 .sale-success-overlay.show { display: flex; }
 .sale-success-icon { font-size: 56px; animation: successPop 0.4s cubic-bezier(0.16,1,0.3,1) forwards; }
 @keyframes successPop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -1736,28 +499,31 @@ tbody td {
 .sale-success-change-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; }
 
 /* ═══ EMPTY STATE ═══ */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  gap: 10px;
-  border: 1px dashed rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.01);
-}
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 10px; border: 1px dashed rgba(255,255,255,0.08); background: rgba(255,255,255,0.01); }
 .empty-icon { font-size: 28px; opacity: 0.2; }
 .empty-text { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.2); text-align: center; }
 
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 
-/* ═══ iOS LANDSCAPE ADJUSTMENTS ═══ */
+/* ═══ FIX: Gastos desglose strip visible en Dashboard ═══ */
+.gastos-strip {
+  background: rgba(232,64,64,0.06);
+  border: 1px solid rgba(232,64,64,0.18);
+  border-left: 3px solid var(--danger);
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gastos-strip-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--danger); }
+.gastos-strip-value { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.06em; color: var(--danger); }
+.gastos-strip-sub { font-family: var(--font-mono); font-size: 8px; color: rgba(232,64,64,0.5); }
+
 @media (orientation: landscape) and (max-height: 500px) {
-  /* On landscape iPhone, reduce nav height and give more horizontal space */
-  :root {
-    --nav-h: 44px;
-    --bottom-nav-h: 44px;
-  }
+  :root { --nav-h: 44px; --bottom-nav-h: 44px; }
   .products-grid { max-height: calc(100vh - 160px); }
   .chart-container { height: 140px; }
 }
@@ -1794,12 +560,9 @@ tbody td {
 
   <!-- TOP NAV -->
   <nav id="top-nav">
-    <!-- nav-inner wraps all content below the notch -->
     <div class="nav-inner">
       <button class="nav-hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menú">
-        <div class="hb-line"></div>
-        <div class="hb-line"></div>
-        <div class="hb-line"></div>
+        <div class="hb-line"></div><div class="hb-line"></div><div class="hb-line"></div>
       </button>
       <div class="nav-brand">COSA <em>NOSTRA</em><span>Gestión Comercial v2.1</span></div>
       <div class="nav-status" id="nav-status-bar">
@@ -1858,7 +621,7 @@ tbody td {
     </div>
     <button class="sidebar-corte-btn" onclick="openCorteModal();closeSidebar()">◈ Corte de Caja</button>
     <div class="sidebar-footer">
-      <div class="sf-version">COSA NOSTRA SYS · v2.1<br>Firebase v10 · Chart.js 4 · iOS Fixed</div>
+      <div class="sf-version">COSA NOSTRA SYS · v2.1<br>Firebase v10 · Chart.js 4 · Gastos Fix</div>
     </div>
   </aside>
 
@@ -1893,17 +656,88 @@ tbody td {
         <div id="growth-indicator" style="margin-left:4px;"></div>
       </div>
 
+      <!-- ══ GASTOS STRIP — siempre visible, desglose inmediato ══ -->
+      <div class="gastos-strip" id="dash-gastos-strip">
+        <div>
+          <div class="gastos-strip-label">↓ Gastos Operativos (Período)</div>
+          <div class="gastos-strip-sub">Estos montos se restan del efectivo y la ganancia</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="gastos-strip-value" id="dash-gastos-periodo">$0.00</div>
+          <div class="gastos-strip-sub"><span id="dash-gastos-count">0</span> egresos registrados</div>
+        </div>
+      </div>
+
       <div class="metrics-grid" id="dash-metrics">
-        <div class="metric-card accent"><div class="metric-tag">Ventas en Período</div><div class="metric-value" id="dm-vendido-periodo">$0.00</div><div class="metric-sub" id="dm-sub-periodo">—</div><div class="metric-icon">📈</div></div>
-        <div class="metric-card accent"><div class="metric-tag">Dinero en Caja (Bruto)</div><div class="metric-value" id="dm-caja">$0.00</div><div class="metric-sub">Total recibido históricamente</div><div class="metric-icon">💰</div></div>
-        <div class="metric-card"><div class="metric-tag">Efectivo Real en Caja</div><div class="metric-value" id="dm-efectivo">$0.00</div><div class="metric-sub">Entradas − Cambios − Gastos pagados</div><div class="metric-icon">💵</div></div>
-        <div class="metric-card success"><div class="metric-tag">Ganancia Neta</div><div class="metric-value success-val" id="dm-ganancia">$0.00</div><div class="metric-sub">Vendido − Costo − Gastos</div><div class="metric-icon">✓</div></div>
-        <div class="metric-card"><div class="metric-tag">ROI</div><div class="metric-value" id="dm-roi">0.00%</div><div class="metric-sub">(Ganancia / Inversión) × 100</div><div class="metric-icon">◎</div></div>
-        <div class="metric-card danger"><div class="metric-tag">Gastos Operativos</div><div class="metric-value danger-val" id="dm-gastos">$0.00</div><div class="metric-sub">Total egresos registrados</div><div class="metric-icon">↓</div></div>
-        <div class="metric-card purple"><div class="metric-tag">Total por Cobrar</div><div class="metric-value purple-val" id="dm-creditos">$0.00</div><div class="metric-sub">Créditos pendientes</div><div class="metric-icon">◐</div></div>
-        <div class="metric-card"><div class="metric-tag">Dinero en Inventario</div><div class="metric-value" id="dm-inv-valor">$0.00</div><div class="metric-sub">SKUs × Precio costo · Dinero estancado</div><div class="metric-icon">▣</div></div>
-        <div class="metric-card"><div class="metric-tag">Ventas Totales</div><div class="metric-value" id="dm-num-ventas">0</div><div class="metric-sub">Transacciones registradas</div><div class="metric-icon">✦</div></div>
-        <div class="metric-card danger"><div class="metric-tag">Stock Bajo / Agotado</div><div class="metric-value danger-val" id="dm-stock-bajo">0</div><div class="metric-sub">Requieren reposición urgente</div><div class="metric-icon">⚠</div></div>
+        <!-- Fila 1: Lo más importante -->
+        <div class="metric-card accent">
+          <div class="metric-tag">Ventas Cobradas en Período</div>
+          <div class="metric-value" id="dm-vendido-periodo">$0.00</div>
+          <div class="metric-sub" id="dm-sub-periodo">—</div>
+          <div class="metric-icon">📈</div>
+        </div>
+        <div class="metric-card success">
+          <div class="metric-tag">Ganancia Neta (Período)</div>
+          <div class="metric-value success-val" id="dm-ganancia-periodo">$0.00</div>
+          <div class="metric-sub">Ventas − Costo − Gastos del período</div>
+          <div class="metric-icon">✓</div>
+        </div>
+        <!-- Fila 2: Caja real -->
+        <div class="metric-card accent">
+          <div class="metric-tag">Dinero en Caja (Bruto Histórico)</div>
+          <div class="metric-value" id="dm-caja">$0.00</div>
+          <div class="metric-sub">Total recibido de clientes (pagoCon)</div>
+          <div class="metric-icon">💰</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-tag">Efectivo Real en Caja</div>
+          <div class="metric-value" id="dm-efectivo">$0.00</div>
+          <div class="metric-sub">Entradas − Cambios − Gastos totales</div>
+          <div class="metric-icon">💵</div>
+        </div>
+        <!-- Fila 3: Métricas globales -->
+        <div class="metric-card success">
+          <div class="metric-tag">Ganancia Neta (Histórica Total)</div>
+          <div class="metric-value success-val" id="dm-ganancia">$0.00</div>
+          <div class="metric-sub">Total vendido − Total costo − Total gastos</div>
+          <div class="metric-icon">✓</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-tag">ROI Global</div>
+          <div class="metric-value" id="dm-roi">0.00%</div>
+          <div class="metric-sub">(Ganancia / Inversión total) × 100</div>
+          <div class="metric-icon">◎</div>
+        </div>
+        <div class="metric-card danger">
+          <div class="metric-tag">Total Gastos (Histórico)</div>
+          <div class="metric-value danger-val" id="dm-gastos">$0.00</div>
+          <div class="metric-sub">Suma total de todos los egresos</div>
+          <div class="metric-icon">↓</div>
+        </div>
+        <div class="metric-card purple">
+          <div class="metric-tag">Total por Cobrar</div>
+          <div class="metric-value purple-val" id="dm-creditos">$0.00</div>
+          <div class="metric-sub">Créditos pendientes de cobro</div>
+          <div class="metric-icon">◐</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-tag">Dinero en Inventario</div>
+          <div class="metric-value" id="dm-inv-valor">$0.00</div>
+          <div class="metric-sub">SKUs × Precio costo · Capital estancado</div>
+          <div class="metric-icon">▣</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-tag">Ventas Totales</div>
+          <div class="metric-value" id="dm-num-ventas">0</div>
+          <div class="metric-sub">Transacciones registradas</div>
+          <div class="metric-icon">✦</div>
+        </div>
+        <div class="metric-card danger">
+          <div class="metric-tag">Stock Bajo / Agotado</div>
+          <div class="metric-value danger-val" id="dm-stock-bajo">0</div>
+          <div class="metric-sub">Requieren reposición urgente</div>
+          <div class="metric-icon">⚠</div>
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -1926,7 +760,6 @@ tbody td {
         </div>
       </div>
       <div class="pos-layout">
-        <!-- Products panel -->
         <div class="pos-products-panel">
           <div class="pos-search-bar">
             <input type="text" class="pos-search-input" id="pos-search" placeholder="Buscar producto..." oninput="filterPosProducts()" autocomplete="off">
@@ -1938,7 +771,6 @@ tbody td {
             <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">▣</div><div class="empty-text">Cargando productos...</div></div>
           </div>
         </div>
-        <!-- Cart panel -->
         <div class="cart-panel">
           <div class="cart-header">
             <span class="cart-header-title">◈ Carrito</span>
@@ -1952,7 +784,6 @@ tbody td {
             <div class="cart-sum-row"><span class="cart-sum-label">Items</span><span class="cart-sum-value" id="cart-qty-total">0 pzs.</span></div>
             <div class="cart-total-row"><span class="cart-total-label">TOTAL</span><span class="cart-total-value" id="cart-total">$0.00</span></div>
           </div>
-          <!-- Sticky on mobile, respects safe area via bottom offset -->
           <div class="cart-actions">
             <button class="btn-primary" style="width:100%;justify-content:center;font-size:11px;" onclick="openPayModal(false)" id="btn-cobrar">✓ Cobrar →</button>
             <button class="btn-purple" style="width:100%;justify-content:center;" onclick="openPayModal(true)" id="btn-credito">◐ Venta a Crédito</button>
@@ -1977,7 +808,6 @@ tbody td {
           <span class="table-title">◈ Catálogo</span>
           <input type="text" class="table-search" id="inv-search" placeholder="Buscar..." oninput="renderInventario()">
         </div>
-        <!-- table-scroll isolates horizontal scroll from page -->
         <div class="table-scroll">
           <table>
             <thead><tr><th>Producto</th><th>Cat.</th><th>Stock</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Valor Stock</th><th>Acciones</th></tr></thead>
@@ -2042,9 +872,15 @@ tbody td {
         </div>
       </div>
       <div class="metrics-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
-        <div class="metric-card danger"><div class="metric-tag">Total Gastos (Histórico)</div><div class="metric-value danger-val" id="g-total">$0.00</div></div>
+        <div class="metric-card danger"><div class="metric-tag">Total Gastos (Histórico)</div><div class="metric-value danger-val" id="g-total">$0.00</div><div class="metric-sub">Se restan del efectivo y ganancia</div></div>
         <div class="metric-card danger"><div class="metric-tag">Gastos Este Mes</div><div class="metric-value danger-val" id="g-mes">$0.00</div></div>
         <div class="metric-card"><div class="metric-tag">Número de Gastos</div><div class="metric-value" id="g-num">0</div></div>
+        <!-- ══ FIX: mostrar cómo impactan en el efectivo ══ -->
+        <div class="metric-card">
+          <div class="metric-tag">Impacto en Caja</div>
+          <div class="metric-value danger-val" id="g-impacto-caja">$0.00</div>
+          <div class="metric-sub">Efectivo Real = Entradas − Cambios − Gastos</div>
+        </div>
       </div>
       <div class="table-wrap">
         <div class="table-header"><span class="table-title">↓ Registro de Gastos</span></div>
@@ -2068,16 +904,31 @@ tbody td {
           <button class="btn-secondary" onclick="calcMetrics();renderCharts()">↺ Actualizar</button>
         </div>
       </div>
+
+      <!-- ══ FIX: Desglose explícito de la fórmula de efectivo ══ -->
+      <div style="background:var(--steel-dark);border:1px solid rgba(255,255,255,0.06);padding:14px 18px;margin-bottom:18px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:var(--muted);">
+        <div style="color:var(--gold);margin-bottom:8px;letter-spacing:0.18em;text-transform:uppercase;">◈ Fórmula de Efectivo Real</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:10px;">
+          <span>Entradas: <strong id="m-formula-entradas" style="color:var(--paper)">$0.00</strong></span>
+          <span style="color:var(--danger)">−</span>
+          <span>Cambios: <strong id="m-formula-cambios" style="color:var(--danger)">$0.00</strong></span>
+          <span style="color:var(--danger)">−</span>
+          <span>Gastos: <strong id="m-formula-gastos" style="color:var(--danger)">$0.00</strong></span>
+          <span style="color:var(--muted)">=</span>
+          <span>Efectivo Real: <strong id="m-formula-resultado" style="color:var(--gold);font-size:13px;">$0.00</strong></span>
+        </div>
+      </div>
+
       <div class="roi-display">
         <div class="roi-cell" style="border-left:3px solid var(--gold);">
           <div class="roi-cell-label">💰 Efectivo Real en Caja</div>
           <div class="roi-cell-value gold" id="m-efectivo">$0.00</div>
-          <div class="roi-cell-sub">Pagos recibidos − Cambios − Gastos</div>
+          <div class="roi-cell-sub">Entradas − Cambios − Gastos totales</div>
         </div>
         <div class="roi-cell" style="border-left:3px solid var(--success);">
           <div class="roi-cell-label">📈 Ganancia Neta Real</div>
           <div class="roi-cell-value success" id="m-ganancia">$0.00</div>
-          <div class="roi-cell-sub">Vendido − Costo inventario − Gastos</div>
+          <div class="roi-cell-sub">Total vendido − Costo inventario − Gastos</div>
         </div>
         <div class="roi-cell" style="border-left:3px solid var(--info);">
           <div class="roi-cell-label">◎ ROI</div>
@@ -2092,7 +943,7 @@ tbody td {
       </div>
       <div class="metrics-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
         <div class="metric-card"><div class="metric-tag">Total Vendido (Bruto)</div><div class="metric-value" id="m-bruto">$0.00</div></div>
-        <div class="metric-card danger"><div class="metric-tag">Total Gastos</div><div class="metric-value danger-val" id="m-gastos">$0.00</div></div>
+        <div class="metric-card danger"><div class="metric-tag">Total Gastos (resta de ganancia)</div><div class="metric-value danger-val" id="m-gastos">$0.00</div></div>
         <div class="metric-card purple"><div class="metric-tag">Por Cobrar</div><div class="metric-value purple-val" id="m-creditos">$0.00</div></div>
         <div class="metric-card"><div class="metric-tag">Número de Ventas</div><div class="metric-value" id="m-num">0</div></div>
         <div class="metric-card"><div class="metric-tag">Ticket Promedio</div><div class="metric-value" id="m-ticket">$0.00</div></div>
@@ -2121,7 +972,7 @@ tbody td {
 
   </main>
 
-  <!-- BOTTOM NAV (mobile) -->
+  <!-- BOTTOM NAV -->
   <nav id="bottom-nav">
     <button class="bn-item active" data-view="dashboard" onclick="showView('dashboard',this)">
       <span class="bn-icon">◈</span><span class="bn-label">Dashboard</span>
@@ -2195,7 +1046,6 @@ tbody td {
         <span class="pay-total-display-label">Total:</span>
         <span class="pay-total-display-value" id="pay-total-display">$0.00</span>
       </div>
-      <!-- Contado fields -->
       <div id="pay-contado-fields">
         <div class="pay-label">Pagó el cliente</div>
         <div class="pay-received-wrap">
@@ -2210,7 +1060,6 @@ tbody td {
           <span class="change-value" id="change-value">$0.00</span>
         </div>
       </div>
-      <!-- Crédito fields -->
       <div class="credit-fields" id="pay-credito-fields">
         <div class="fgrp"><label>Nombre del Cliente *</label><input type="text" id="cred-cliente" placeholder="Ej: Juan García" autocomplete="off"></div>
         <div class="fgrp"><label>Teléfono (Opcional)</label><input type="tel" id="cred-tel" placeholder="555-123-4567" inputmode="tel"></div>
@@ -2263,7 +1112,7 @@ tbody td {
         <div class="corte-section-title">Resumen del Sistema</div>
         <div class="corte-row"><span class="corte-row-label">Total recibido de clientes (pagoCon)</span><span class="corte-row-value" id="corte-entradas">$0.00</span></div>
         <div class="corte-row"><span class="corte-row-label">Cambio devuelto a clientes</span><span class="corte-row-value" style="color:var(--danger);" id="corte-cambio-total">−$0.00</span></div>
-        <div class="corte-row"><span class="corte-row-label">Gastos operativos pagados</span><span class="corte-row-value" style="color:var(--danger);" id="corte-gastos">−$0.00</span></div>
+        <div class="corte-row"><span class="corte-row-label">Gastos operativos (cn_gastos)</span><span class="corte-row-value" style="color:var(--danger);" id="corte-gastos">−$0.00</span></div>
         <div class="corte-row" style="border-top:1px solid rgba(200,152,10,0.2);padding-top:10px;margin-top:4px;">
           <span class="corte-row-label" style="color:var(--gold);font-weight:700;">Efectivo esperado en caja</span>
           <span class="corte-row-value" style="color:var(--gold);font-size:22px;" id="corte-esperado">$0.00</span>
@@ -2305,7 +1154,7 @@ tbody td {
 
 <div id="toast-container"></div>
 
-<!-- ═══ JAVASCRIPT (sin cambios en lógica) ═══ -->
+<!-- ═══ JAVASCRIPT ═══ -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
@@ -2351,6 +1200,96 @@ let cart = [], posCurrentCat = 'Todos', unsubs = [];
 let currentDateRange = 'hoy';
 let chartHoras = null, chartCats = null;
 let isCredit = false;
+
+/* ══════════════════════════════════════════
+   HELPER CENTRAL DE GASTOS
+   ─────────────────────────────────────────
+   Todas las métricas de gastos pasan
+   por esta función. Nunca calcular inline.
+══════════════════════════════════════════ */
+
+/**
+ * Retorna el total de TODOS los gastos históricos.
+ * Fórmula: Σ gasto.monto  (colección cn_gastos completa)
+ */
+function calcTotalGastosHistorico() {
+  return gastos.reduce((sum, g) => sum + (g.monto || 0), 0);
+}
+
+/**
+ * Retorna gastos filtrados por un DateBounds { start, end }.
+ * Si start es null → devuelve todos (período "Todo").
+ */
+function calcGastosByBounds(bounds) {
+  if (!bounds.start) return gastos; // "Todo el tiempo"
+  return gastos.filter(g => {
+    const f = g.fecha?.toDate ? g.fecha.toDate() : new Date(g.fecha || 0);
+    return f >= bounds.start && f <= bounds.end;
+  });
+}
+
+/**
+ * Retorna el total de gastos para un bounds dado.
+ */
+function calcTotalGastosPeriodo(bounds) {
+  return calcGastosByBounds(bounds).reduce((sum, g) => sum + (g.monto || 0), 0);
+}
+
+/**
+ * Calcula el Efectivo Real en Caja.
+ *
+ * FÓRMULA:
+ *   Efectivo Real = totalEntradas (pagoCon) − totalCambioDevuelto − totalGastosHistorico
+ *
+ * - totalEntradas: dinero físico que entró a la caja (lo que pagó cada cliente)
+ * - totalCambioDevuelto: lo que se devolvió como cambio (sale de caja)
+ * - totalGastosHistorico: todos los gastos pagados (salen de caja)
+ *
+ * Los gastos se leen de cn_gastos (listener en tiempo real), NO de cajaData,
+ * de modo que cualquier gasto recién registrado actualiza este valor
+ * inmediatamente sin requerir una venta.
+ */
+function calcEfectivoReal() {
+  const entradas  = cajaData.totalEntradas || 0;
+  const cambios   = cajaData.totalCambioDevuelto || 0;
+  const gastosTot = calcTotalGastosHistorico();          // ← LIVE desde cn_gastos
+  return entradas - cambios - gastosTot;
+}
+
+/**
+ * Calcula la Ganancia Neta histórica.
+ *
+ * FÓRMULA:
+ *   Ganancia Neta = totalVendido − totalCosto − totalGastosHistorico
+ *
+ * - totalVendido: suma de precioVenta × qty de ventas cobradas
+ * - totalCosto: suma de precioCosto × qty de ventas cobradas
+ * - totalGastosHistorico: egresos operativos (cn_gastos)
+ *
+ * Resultado puede ser negativo (pérdida operativa).
+ */
+function calcGananciaNeta() {
+  const vendido  = cajaData.totalVendido || 0;
+  const costo    = cajaData.totalCosto || 0;
+  const gastosTot = calcTotalGastosHistorico();
+  return vendido - costo - gastosTot;
+}
+
+/**
+ * Calcula Ganancia Neta para un período específico.
+ * Usa ventas filtradas y gastos filtrados del mismo período.
+ *
+ * FÓRMULA (período):
+ *   Ganancia Período = Σ(ventasPeriodo.totalVenta) − Σ(ventasPeriodo.totalCosto) − gastosPeriodo
+ */
+function calcGananciaNetaPeriodo(bounds) {
+  const ventasPeriodo = filterVentasByRange(bounds)
+    .filter(v => !v.esCredito || v.estado === 'cobrado');
+  const ventadoPeriodo = ventasPeriodo.reduce((s, v) => s + (v.totalVenta || 0), 0);
+  const costoPeriodo   = ventasPeriodo.reduce((s, v) => s + (v.totalCosto || 0), 0);
+  const gastosPeriodo  = calcTotalGastosPeriodo(bounds);
+  return ventadoPeriodo - costoPeriodo - gastosPeriodo;
+}
 
 /* ══ AUTH ══ */
 onAuthStateChanged(auth, async user => {
@@ -2413,9 +1352,12 @@ function initListeners() {
     ventas = snap.docs.map(d => ({ id:d.id, ...d.data() }));
     renderVentas(); updateDashRecentSales(); refreshAll();
   });
+  /* ══ FIX: el listener de gastos llama refreshAll()
+     Esto garantiza que en cuanto se registra un gasto,
+     TODOS los cálculos se recalculan instantáneamente. ══ */
   const u3 = onSnapshot(query(COL_GASTOS, orderBy('fecha','desc')), snap => {
     gastos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    renderGastos(); refreshAll();
+    renderGastos(); refreshAll(); // ← refreshAll asegura que efectivo y ganancia se actualicen
   });
   const u4 = onSnapshot(query(COL_CRED, orderBy('fecha','desc')), snap => {
     creditos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -2433,6 +1375,8 @@ function stopListeners() { unsubs.forEach(u => u && u()); unsubs = []; }
 
 function refreshAll() {
   updateNavBar(); updateDashMetrics(); calcMetrics();
+  // Actualizar tarjeta de impacto en vista de gastos
+  updateGastosImpact();
   if (document.getElementById('view-metricas').classList.contains('active')) renderCharts();
 }
 
@@ -2497,32 +1441,48 @@ function filterVentasByRange(bounds) {
 
 /* ══ NAVBAR ══ */
 function updateNavBar() {
-  const totalGastos = gastos.reduce((s,g) => s+(g.monto||0), 0);
-  const efectivoReal = (cajaData.totalEntradas||0) - (cajaData.totalCambioDevuelto||0) - totalGastos;
+  // Efectivo real usa helper centralizado
+  const efectivoReal = calcEfectivoReal();
   document.getElementById('nav-caja').textContent = fmt(efectivoReal);
+
   const hoy = new Date().toDateString();
   const ventasHoy = ventas.filter(v => {
     const f = v.fecha?.toDate ? v.fecha.toDate() : new Date(v.fecha||0);
     return f.toDateString() === hoy;
   }).length;
   document.getElementById('nav-ventas-hoy').textContent = ventasHoy;
+
   const pendCred = creditos.filter(c => c.estado==='pendiente').reduce((s,c) => s+(c.monto||0), 0);
   document.getElementById('nav-creditos').textContent = fmt(pendCred);
 }
 
-/* ══ DASHBOARD METRICS ══ */
+/* ══ DASHBOARD METRICS ══
+   CORRECCIÓN PRINCIPAL:
+   - dm-efectivo usa calcEfectivoReal() que resta gastos en tiempo real
+   - dm-ganancia usa calcGananciaNeta() que también resta gastos
+   - dm-ganancia-periodo usa calcGananciaNetaPeriodo() con gastos del mismo período
+   - dash-gastos-strip muestra el total de gastos del período seleccionado
+   ════════════════════════════════════════════════════════════════════ */
 function updateDashMetrics() {
   const bounds = getDateBounds();
   const ventasPeriodo = filterVentasByRange(bounds);
   const cobradosEnPeriodo = ventasPeriodo.filter(v => !v.esCredito || v.estado==='cobrado');
   const ventadoPeriodo = cobradosEnPeriodo.reduce((s,v) => s+(v.totalVenta||0), 0);
-  const costoPeriodo   = cobradosEnPeriodo.reduce((s,v) => s+(v.totalCosto||0), 0);
-  const gastosPeriodo = gastos.filter(g => {
-    if (!bounds.start) return true;
-    const f = g.fecha?.toDate ? g.fecha.toDate() : new Date(g.fecha||0);
-    return f >= bounds.start && f <= bounds.end;
-  }).reduce((s,g) => s+(g.monto||0), 0);
 
+  // ── Gastos del período para el strip ──
+  const gastosPeriodo      = calcTotalGastosPeriodo(bounds);
+  const gastosPeriodoCount = calcGastosByBounds(bounds).length;
+
+  // ── Gastos strip: siempre visible, muestra total del período ──
+  const stripEl = document.getElementById('dash-gastos-periodo');
+  const countEl = document.getElementById('dash-gastos-count');
+  if (stripEl) stripEl.textContent = fmt(gastosPeriodo);
+  if (countEl) countEl.textContent = gastosPeriodoCount;
+
+  // ── Ganancia del período (ventas − costo − gastos del mismo período) ──
+  const gananciaPeriodo = calcGananciaNetaPeriodo(bounds);
+
+  // ── Comparativo vs período anterior ──
   let growthHTML = '';
   if (['hoy','semana','mes'].includes(currentDateRange)) {
     const now = new Date();
@@ -2548,32 +1508,47 @@ function updateDashMetrics() {
   }
   document.getElementById('growth-indicator').innerHTML = growthHTML;
 
-  const totalGastos  = gastos.reduce((s,g) => s+(g.monto||0), 0);
-  const pendCred     = creditos.filter(c=>c.estado==='pendiente').reduce((s,c)=>s+(c.monto||0), 0);
-  const totalVendido = cajaData.totalVendido || 0;
-  const totalCosto   = cajaData.totalCosto || 0;
-  const ganancia     = totalVendido - totalCosto - totalGastos;
-  const roi          = totalCosto > 0 ? (ganancia / totalCosto) * 100 : 0;
-  const efectivoReal = (cajaData.totalEntradas||0) - (cajaData.totalCambioDevuelto||0) - totalGastos;
-  const invValor = calcInvValor();
-  const stockBajo = productos.filter(p => (p.stock||0) <= 2).length;
+  // ── Métricas globales (históricas) — usan helpers centralizados ──
+  const totalGastosHist  = calcTotalGastosHistorico();
+  const pendCred         = creditos.filter(c=>c.estado==='pendiente').reduce((s,c)=>s+(c.monto||0), 0);
+  const gananciaGlobal   = calcGananciaNeta();      // totalVendido − totalCosto − gastos
+  const efectivoReal     = calcEfectivoReal();      // entradas − cambios − gastos
+  const roi              = (cajaData.totalCosto||0) > 0 ? (gananciaGlobal / (cajaData.totalCosto||0)) * 100 : 0;
+  const invValor         = calcInvValor();
+  const stockBajo        = productos.filter(p => (p.stock||0) <= 2).length;
 
-  document.getElementById('dm-vendido-periodo').textContent = fmt(ventadoPeriodo);
-  document.getElementById('dm-sub-periodo').textContent = bounds.label;
-  document.getElementById('dm-caja').textContent = fmt(cajaData.totalEntradas||0);
+  // ── Aplicar valores al DOM ──
+  document.getElementById('dm-vendido-periodo').textContent   = fmt(ventadoPeriodo);
+  document.getElementById('dm-sub-periodo').textContent       = bounds.label;
+  document.getElementById('dm-ganancia-periodo').textContent  = fmt(gananciaPeriodo);
+  document.getElementById('dm-ganancia-periodo').className    = 'metric-value ' + (gananciaPeriodo>=0?'success-val':'danger-val');
+
+  document.getElementById('dm-caja').textContent     = fmt(cajaData.totalEntradas||0);
   document.getElementById('dm-efectivo').textContent = fmt(efectivoReal);
-  document.getElementById('dm-ganancia').textContent = fmt(ganancia);
-  document.getElementById('dm-ganancia').className = 'metric-value ' + (ganancia>=0?'success-val':'danger-val');
-  document.getElementById('dm-roi').textContent = pct(roi);
-  document.getElementById('dm-gastos').textContent = fmt(totalGastos);
+
+  document.getElementById('dm-ganancia').textContent = fmt(gananciaGlobal);
+  document.getElementById('dm-ganancia').className   = 'metric-value ' + (gananciaGlobal>=0?'success-val':'danger-val');
+
+  document.getElementById('dm-roi').textContent      = pct(roi);
+  document.getElementById('dm-gastos').textContent   = fmt(totalGastosHist);
   document.getElementById('dm-creditos').textContent = fmt(pendCred);
-  document.getElementById('dm-inv-valor').textContent = fmt(invValor);
-  document.getElementById('dm-num-ventas').textContent = cajaData.numVentas || 0;
-  document.getElementById('dm-stock-bajo').textContent = stockBajo;
+  document.getElementById('dm-inv-valor').textContent= fmt(invValor);
+  document.getElementById('dm-num-ventas').textContent= cajaData.numVentas || 0;
+  document.getElementById('dm-stock-bajo').textContent= stockBajo;
 }
 
 function calcInvValor() {
   return productos.reduce((s,p) => s + (p.precioCosto||0) * (p.stock||0), 0);
+}
+
+/* ══ FIX: Actualizar tarjeta de impacto en vista de Gastos ══ */
+function updateGastosImpact() {
+  const el = document.getElementById('g-impacto-caja');
+  if (!el) return;
+  const efectivo = calcEfectivoReal();
+  el.textContent = fmt(efectivo);
+  // Color verde si positivo, rojo si negativo
+  el.className = 'metric-value ' + (efectivo >= 0 ? 'success-val' : 'danger-val');
 }
 
 function updateDashRecentSales() {
@@ -2583,9 +1558,10 @@ function updateDashRecentSales() {
     c.innerHTML = `<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">Sin ventas aún</div></div>`;
     return;
   }
-  c.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Folio</th><th>Fecha</th><th>Items</th><th>Total</th><th>Tipo</th><th>Ganancia</th></tr></thead><tbody>
+  c.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Folio</th><th>Fecha</th><th>Items</th><th>Total</th><th>Tipo</th><th>Ganancia Venta</th></tr></thead><tbody>
     ${recent.map(v => {
       const f = v.fecha?.toDate ? v.fecha.toDate() : new Date(v.fecha||0);
+      // Ganancia bruta de la venta (sin prorratea gastos operativos)
       const g = (v.totalVenta||0) - (v.totalCosto||0);
       const tipo = v.esCredito ? `<span class="status-badge ${v.estado==='cobrado'?'paid':'pending'}">${v.estado==='cobrado'?'COBRADO':'CRÉDITO'}</span>` : `<span class="status-badge paid">CONTADO</span>`;
       return `<tr><td class="td-mono" style="color:var(--gold)">${v.folio||'—'}</td><td class="td-mono" style="font-size:9px">${f.toLocaleString('es-MX')}</td><td>${(v.items||[]).length} pzs.</td><td class="td-gold">${fmt(v.totalVenta)}</td><td>${tipo}</td><td class="${g>=0?'td-success':'td-danger'}">${fmt(g)}</td></tr>`;
@@ -3026,10 +2002,11 @@ window.saveGasto = async () => {
   try{
     await addDoc(COL_GASTOS,{concepto,categoria:cat,monto,notas,fecha:serverTimestamp()});
     document.getElementById('gasto-modal').classList.remove('open');
-    toast('Gasto registrado.','success');
+    toast('Gasto registrado. El efectivo y la ganancia se actualizaron.','success');
   } catch(e){err.textContent='⚠ Error: '+e.message;err.classList.add('show');}
   finally{btn.disabled=false;btn.textContent='Registrar →';}
 };
+
 function renderGastos(){
   const totalG=gastos.reduce((s,g)=>s+(g.monto||0),0);
   const now=new Date();
@@ -3040,6 +2017,7 @@ function renderGastos(){
   document.getElementById('g-total').textContent=fmt(totalG);
   document.getElementById('g-mes').textContent=fmt(mesG);
   document.getElementById('g-num').textContent=gastos.length;
+  // g-impacto-caja se actualiza en updateGastosImpact() vía refreshAll()
 
   const tbody=document.getElementById('gastos-tbody');
   if(!gastos.length){
@@ -3060,36 +2038,52 @@ function renderGastos(){
 }
 window.deleteGasto = async (id) => {
   if(!confirm('¿Eliminar este gasto?'))return;
-  try{await deleteDoc(doc(db,'cn_gastos',id));toast('Gasto eliminado.','info');}
+  try{await deleteDoc(doc(db,'cn_gastos',id));toast('Gasto eliminado. El efectivo se actualizó.','info');}
   catch(e){toast('Error al eliminar.','error');}
 };
 
-/* ══ MÉTRICAS ══ */
+/* ══ MÉTRICAS ══
+   FIX: Todos los cálculos usan los helpers centralizados.
+   Se muestra el desglose explícito de la fórmula de efectivo real.
+   ══════════════════════════════════════════════════════════════ */
 window.calcMetrics = () => {
   const totalVendido  = cajaData.totalVendido || 0;
   const totalCosto    = cajaData.totalCosto || 0;
-  const totalGastos   = gastos.reduce((s,g)=>s+(g.monto||0),0);
+  const totalGastos   = calcTotalGastosHistorico();      // ← helper centralizado
   const pendCred      = creditos.filter(c=>c.estado==='pendiente').reduce((s,c)=>s+(c.monto||0),0);
   const num           = cajaData.numVentas || 0;
-  const ganancia      = totalVendido - totalCosto - totalGastos;
+  const ganancia      = calcGananciaNeta();               // ← helper centralizado
+  const efectivo      = calcEfectivoReal();               // ← helper centralizado
   const roi           = totalCosto > 0 ? (ganancia/totalCosto)*100 : 0;
   const ticket        = num > 0 ? totalVendido/num : 0;
   const margen        = totalVendido > 0 ? (ganancia/totalVendido)*100 : 0;
-  const efectivo      = (cajaData.totalEntradas||0) - (cajaData.totalCambioDevuelto||0) - totalGastos;
   const invValor      = calcInvValor();
+  const entradas      = cajaData.totalEntradas || 0;
+  const cambios       = cajaData.totalCambioDevuelto || 0;
 
-  const s=(id,val,cls)=>{const el=document.getElementById(id);if(!el)return;el.textContent=val;if(cls)el.className=cls;};
-  s('m-efectivo',fmt(efectivo));
-  s('m-ganancia',fmt(ganancia),'roi-cell-value '+(ganancia>=0?'success':'danger'));
-  s('m-roi',pct(roi),'roi-cell-value '+(roi>=0?'gold':'danger'));
-  s('m-inv-valor',fmt(invValor));
-  s('m-bruto',fmt(totalVendido));
-  s('m-gastos',fmt(totalGastos));
-  s('m-creditos',fmt(pendCred));
-  s('m-num',num);
-  s('m-ticket',fmt(ticket));
-  s('m-margen',pct(margen));
+  // ── Desglose de fórmula visible en Métricas ──
+  const set = (id, val, cls) => {
+    const el = document.getElementById(id); if(!el) return;
+    el.textContent = val; if(cls) el.className = cls;
+  };
+  set('m-formula-entradas',  fmt(entradas));
+  set('m-formula-cambios',   fmt(cambios));
+  set('m-formula-gastos',    fmt(totalGastos));
+  set('m-formula-resultado', fmt(efectivo));
 
+  // ── Valores principales ──
+  set('m-efectivo', fmt(efectivo));
+  set('m-ganancia', fmt(ganancia), 'roi-cell-value ' + (ganancia>=0?'success':'danger'));
+  set('m-roi',      pct(roi),      'roi-cell-value ' + (roi>=0?'gold':'danger'));
+  set('m-inv-valor',fmt(invValor));
+  set('m-bruto',    fmt(totalVendido));
+  set('m-gastos',   fmt(totalGastos));
+  set('m-creditos', fmt(pendCred));
+  set('m-num',      num);
+  set('m-ticket',   fmt(ticket));
+  set('m-margen',   pct(margen));
+
+  // ── Top productos ──
   const prodMap={};
   ventas.forEach(v=>{
     (v.items||[]).forEach(item=>{
@@ -3205,28 +2199,25 @@ function renderChartCategorias(){
 
 /* ══ CORTE DE CAJA ══ */
 window.openCorteModal = () => {
-  const totalGastos   = gastos.reduce((s,g)=>s+(g.monto||0),0);
+  const totalGastos   = calcTotalGastosHistorico();      // ← helper centralizado
   const totalEntradas = cajaData.totalEntradas || 0;
   const cambioTotal   = cajaData.totalCambioDevuelto || 0;
-  const esperado      = totalEntradas - cambioTotal - totalGastos;
+  const esperado      = totalEntradas - cambioTotal - totalGastos;  // ← misma fórmula que calcEfectivoReal
 
-  document.getElementById('corte-entradas').textContent      = fmt(totalEntradas);
-  document.getElementById('corte-cambio-total').textContent  = '−'+fmt(cambioTotal);
-  document.getElementById('corte-gastos').textContent        = '−'+fmt(totalGastos);
-  document.getElementById('corte-esperado').textContent      = fmt(esperado);
-  document.getElementById('corte-fisico').value              = '';
+  document.getElementById('corte-entradas').textContent     = fmt(totalEntradas);
+  document.getElementById('corte-cambio-total').textContent = '−'+fmt(cambioTotal);
+  document.getElementById('corte-gastos').textContent       = '−'+fmt(totalGastos);
+  document.getElementById('corte-esperado').textContent     = fmt(esperado);
+  document.getElementById('corte-fisico').value             = '';
   document.getElementById('corte-resultado-box').style.display='none';
-  document.getElementById('corte-save-btn').disabled         = true;
+  document.getElementById('corte-save-btn').disabled        = true;
   document.getElementById('corte-modal').classList.add('open');
 };
 
 window.calcCorte = () => {
-  const fisico   = parseFloat(document.getElementById('corte-fisico').value)||0;
-  const totalGastos = gastos.reduce((s,g)=>s+(g.monto||0),0);
-  const totalEntradas = cajaData.totalEntradas || 0;
-  const cambioTotal   = cajaData.totalCambioDevuelto || 0;
-  const esperado = totalEntradas - cambioTotal - totalGastos;
-  const diff = fisico - esperado;
+  const fisico    = parseFloat(document.getElementById('corte-fisico').value)||0;
+  const esperado  = calcEfectivoReal();                   // ← mismo helper centralizado
+  const diff      = fisico - esperado;
 
   const box=document.getElementById('corte-resultado-box');
   const res=document.getElementById('corte-resultado');
@@ -3240,11 +2231,11 @@ window.calcCorte = () => {
 };
 
 window.saveCorte = async () => {
-  const fisico   = parseFloat(document.getElementById('corte-fisico').value)||0;
-  const totalGastos = gastos.reduce((s,g)=>s+(g.monto||0),0);
+  const fisico    = parseFloat(document.getElementById('corte-fisico').value)||0;
+  const totalGastos   = calcTotalGastosHistorico();
   const totalEntradas = cajaData.totalEntradas || 0;
   const cambioTotal   = cajaData.totalCambioDevuelto || 0;
-  const esperado = totalEntradas - cambioTotal - totalGastos;
+  const esperado  = totalEntradas - cambioTotal - totalGastos;
   const btn=document.getElementById('corte-save-btn');
   btn.disabled=true; btn.textContent='⟳ Guardando...';
   try{
