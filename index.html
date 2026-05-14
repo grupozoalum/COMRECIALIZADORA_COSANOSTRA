@@ -6,14 +6,16 @@
 <meta name="theme-color" content="#05060A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>COSA NOSTRA — Sistema de Gestión v2.1</title>
+<title>COSA NOSTRA — Sistema de Gestión v2.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* ══════════════════════════════════════════════════
-   COSA NOSTRA — SISTEMA v2.1 · GASTOS FIX APPLIED
-   Gastos now fully integrated into all financial metrics
+   COSA NOSTRA — SISTEMA v2.2
+   NUEVAS FUNCIONES:
+   1. Reinversión: saca dinero de caja sin afectar ganancia
+   2. Roles: Admin vs Vendedor (acceso restringido)
 ══════════════════════════════════════════════════ */
 :root {
   --void:        #05060A;
@@ -37,6 +39,8 @@
   --success-glow:rgba(40,199,111,0.15);
   --info:        #4A9EF5;
   --purple:      #9B59B6;
+  --teal:        #1ABC9C;
+  --teal-glow:   rgba(26,188,156,0.15);
   --white:       #FFFFFF;
 
   --nav-h:       54px;
@@ -140,6 +144,16 @@ p,h1,h2,h3,h4,span,div,a,li { word-break: break-word; overflow-wrap: break-word;
 .btn-login:hover { background: var(--gold-light); }
 .login-footer { padding: 12px 28px 20px; text-align: center; font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; color: rgba(255,255,255,0.12); }
 
+/* ═══ ROLE BADGE ═══ */
+.role-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; font-family: var(--font-mono); font-size: 8px;
+  letter-spacing: 0.12em; text-transform: uppercase; border: 1px solid;
+  flex-shrink: 0;
+}
+.role-badge.admin { border-color: var(--gold-border); color: var(--gold); background: var(--gold-glow); }
+.role-badge.vendedor { border-color: rgba(74,158,245,0.3); color: var(--info); background: rgba(74,158,245,0.08); }
+
 /* ═══ APP SHELL ═══ */
 #app { display: none; min-height: 100vh; min-height: -webkit-fill-available; }
 #app.show { display: block; }
@@ -209,6 +223,9 @@ p,h1,h2,h3,h4,span,div,a,li { word-break: break-word; overflow-wrap: break-word;
 .nav-item.active .nav-item-icon { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
 .nav-item-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); transition: color 0.15s; }
 .nav-item.active .nav-item-label { color: var(--paper); }
+/* Admin-only nav items hidden for vendedores */
+.nav-item[data-admin-only] { display: none; }
+body.is-admin .nav-item[data-admin-only] { display: flex; }
 .sidebar-corte-btn { margin: 12px 16px; width: calc(100% - 32px); font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); background: transparent; border: 1px solid var(--gold-border); padding: 12px; cursor: pointer; transition: all 0.15s; min-height: 44px; -webkit-appearance: none; border-radius: 0; }
 .sidebar-corte-btn:hover { background: var(--gold-glow); }
 .sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.04); }
@@ -243,6 +260,9 @@ p,h1,h2,h3,h4,span,div,a,li { word-break: break-word; overflow-wrap: break-word;
 .bn-label { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mid); transition: color 0.15s; }
 .bn-item.active .bn-icon, .bn-item.active .bn-label { color: var(--gold); }
 .bn-item:active .bn-icon { transform: scale(0.9); }
+/* Admin-only bottom nav items */
+.bn-item[data-admin-only] { display: none; }
+body.is-admin .bn-item[data-admin-only] { display: flex; }
 
 /* ─── PAGE HEADER ─── */
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: clamp(16px, 2.5vw, 28px); padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -261,11 +281,13 @@ p,h1,h2,h3,h4,span,div,a,li { word-break: break-word; overflow-wrap: break-word;
 .metric-card.danger { border-left: 2px solid var(--danger); }
 .metric-card.success { border-left: 2px solid var(--success); }
 .metric-card.purple { border-left: 2px solid var(--purple); }
+.metric-card.teal { border-left: 2px solid var(--teal); }
 .metric-tag { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
 .metric-value { font-family: var(--font-display); font-size: clamp(18px, 3.5vw, 32px); letter-spacing: 0.04em; color: var(--white); line-height: 1; margin-bottom: 3px; word-break: break-all; }
 .metric-value.success-val { color: var(--success); }
 .metric-value.danger-val { color: var(--danger); }
 .metric-value.purple-val { color: var(--purple); }
+.metric-value.teal-val { color: var(--teal); }
 .metric-sub { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.06em; color: rgba(255,255,255,0.18); }
 .metric-icon { position: absolute; right: 12px; top: 12px; font-size: 16px; opacity: 0.1; }
 
@@ -300,6 +322,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
 .td-success { color: var(--success); font-family: var(--font-mono); font-size: 11px; }
 .td-danger { color: var(--danger); font-family: var(--font-mono); font-size: 11px; }
 .td-purple { color: var(--purple); font-family: var(--font-mono); font-size: 11px; }
+.td-teal { color: var(--teal); font-family: var(--font-mono); font-size: 11px; }
 .stock-badge { display: inline-flex; align-items: center; padding: 2px 7px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; border: 1px solid; white-space: nowrap; }
 .stock-badge.ok { border-color: rgba(40,199,111,0.3); color: var(--success); background: var(--success-glow); }
 .stock-badge.low { border-color: rgba(212,160,23,0.3); color: var(--amber); background: rgba(212,160,23,0.1); }
@@ -309,6 +332,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
 .status-badge.pending { border-color: rgba(212,160,23,0.3); color: var(--amber); background: rgba(212,160,23,0.1); }
 .status-badge.paid { border-color: rgba(40,199,111,0.3); color: var(--success); background: var(--success-glow); }
 .status-badge.overdue { border-color: rgba(232,64,64,0.3); color: var(--danger); background: var(--danger-glow); }
+.status-badge.reinversion { border-color: rgba(26,188,156,0.3); color: var(--teal); background: rgba(26,188,156,0.08); }
 
 /* ─── BUTTONS ─── */
 .btn-primary { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--void); background: var(--gold); border: none; padding: 10px 16px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; min-height: 44px; white-space: nowrap; position: relative; overflow: hidden; -webkit-appearance: none; border-radius: 0; }
@@ -322,6 +346,9 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
 .btn-success:hover { border-color: var(--success); color: var(--success); background: var(--success-glow); }
 .btn-purple { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(155,89,182,0.9); background: transparent; border: 1px solid rgba(155,89,182,0.3); padding: 9px 14px; cursor: pointer; transition: all 0.15s; min-height: 44px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; -webkit-appearance: none; border-radius: 0; }
 .btn-purple:hover { border-color: var(--purple); color: var(--purple); background: rgba(155,89,182,0.1); }
+/* ══ NEW: Botón teal para reinversión ══ */
+.btn-teal { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(26,188,156,0.9); background: transparent; border: 1px solid rgba(26,188,156,0.3); padding: 9px 14px; cursor: pointer; transition: all 0.15s; min-height: 44px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; -webkit-appearance: none; border-radius: 0; }
+.btn-teal:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-glow); }
 .btn-sm { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); background: transparent; border: 1px solid rgba(255,255,255,0.1); padding: 7px 8px; cursor: pointer; transition: all 0.15s; min-height: 36px; min-width: 36px; -webkit-appearance: none; border-radius: 0; }
 .btn-sm:hover { border-color: var(--gold); color: var(--gold); }
 
@@ -331,8 +358,10 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
 .modal-panel { background: var(--carbon); border: 1px solid var(--gold-border); border-top: 2px solid var(--gold); width: 100%; max-width: 500px; margin: auto; position: relative; max-width: min(500px, calc(100vw - 24px)); }
 .modal-panel.narrow { max-width: min(400px, calc(100vw - 24px)); }
 .modal-panel.corte { max-width: min(520px, calc(100vw - 24px)); }
+.modal-panel.teal-top { border-top-color: var(--teal); border-color: rgba(26,188,156,0.3); }
 .modal-head { background: var(--steel-dark); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); gap: 10px; }
 .modal-head-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.modal-head-title.teal { color: var(--teal); }
 .modal-close { background: none; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 11px; transition: all 0.15s; flex-shrink: 0; -webkit-appearance: none; border-radius: 0; }
 .modal-close:hover { border-color: var(--gold); color: var(--gold); }
 .modal-body { padding: 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -349,6 +378,27 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
 @media(max-width:480px) { .form-row { grid-template-columns: 1fr; } }
 .merror { font-family: var(--font-mono); font-size: 9px; color: var(--danger); letter-spacing: 0.08em; display: none; padding: 8px 10px; background: var(--danger-glow); border: 1px solid rgba(232,64,64,0.2); margin-bottom: 8px; }
 .merror.show { display: block; }
+
+/* ══ REINVERSIÓN STRIP ══ */
+.reinversion-strip {
+  background: rgba(26,188,156,0.06);
+  border: 1px solid rgba(26,188,156,0.2);
+  border-left: 3px solid var(--teal);
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+.reinversion-strip-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal); }
+.reinversion-strip-value { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.06em; color: var(--teal); }
+
+/* ══ INFO BOX ══ */
+.info-box {
+  background: rgba(74,158,245,0.06); border: 1px solid rgba(74,158,245,0.15);
+  border-left: 3px solid var(--info); padding: 10px 14px;
+  margin-bottom: 12px; font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.06em; color: rgba(74,158,245,0.8); line-height: 1.6;
+}
+.info-box strong { color: var(--info); }
 
 /* ═══ POS ═══ */
 .pos-layout { display: flex; flex-direction: column; gap: 16px; }
@@ -477,6 +527,23 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
 /* ═══ GASTOS ═══ */
 .gasto-cat-badge { display: inline-flex; padding: 2px 7px; font-family: var(--font-mono); font-size: 9px; border: 1px solid rgba(232,64,64,0.25); color: var(--danger); background: rgba(232,64,64,0.07); white-space: nowrap; }
 
+/* ═══ GASTOS STRIP ═══ */
+.gastos-strip {
+  background: rgba(232,64,64,0.06);
+  border: 1px solid rgba(232,64,64,0.18);
+  border-left: 3px solid var(--danger);
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gastos-strip-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--danger); }
+.gastos-strip-value { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.06em; color: var(--danger); }
+.gastos-strip-sub { font-family: var(--font-mono); font-size: 8px; color: rgba(232,64,64,0.5); }
+
 /* ═══ TOAST ═══ */
 #toast-container { position: fixed; bottom: calc(var(--bottom-nav-h-total) + 16px); right: 16px; right: max(16px, calc(var(--safe-right) + 16px)); z-index: 999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
 @media(min-width:1024px) { #toast-container { bottom: 24px; right: 24px; } }
@@ -503,24 +570,20 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
 .empty-icon { font-size: 28px; opacity: 0.2; }
 .empty-text { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.2); text-align: center; }
 
-@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-
-/* ═══ FIX: Gastos desglose strip visible en Dashboard ═══ */
-.gastos-strip {
-  background: rgba(232,64,64,0.06);
-  border: 1px solid rgba(232,64,64,0.18);
-  border-left: 3px solid var(--danger);
-  padding: 10px 16px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+/* ═══ VENDEDOR BLOQUEADO ═══ */
+.vendedor-bloqueado {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; gap: 14px; text-align: center;
+  border: 1px dashed rgba(74,158,245,0.15); background: rgba(74,158,245,0.02);
 }
-.gastos-strip-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--danger); }
-.gastos-strip-value { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.06em; color: var(--danger); }
-.gastos-strip-sub { font-family: var(--font-mono); font-size: 8px; color: rgba(232,64,64,0.5); }
+.vendedor-bloqueado-icon { font-size: 40px; opacity: 0.3; }
+.vendedor-bloqueado-title { font-family: var(--font-display); font-size: 28px; letter-spacing: 0.1em; color: var(--info); }
+.vendedor-bloqueado-sub { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); max-width: 320px; line-height: 1.8; }
+
+/* ═══ VENDEDORES TABLE (vista admin) ═══ */
+.vendedor-badge { display: inline-flex; padding: 2px 7px; font-family: var(--font-mono); font-size: 9px; border: 1px solid rgba(74,158,245,0.3); color: var(--info); background: rgba(74,158,245,0.08); white-space: nowrap; }
+
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 
 @media (orientation: landscape) and (max-height: 500px) {
   :root { --nav-h: 44px; --bottom-nav-h: 44px; }
@@ -535,7 +598,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
 <div id="loader">
   <div class="loader-logo">COSA <em>NOSTRA</em></div>
   <div class="loader-bar"><div class="loader-fill"></div></div>
-  <div class="loader-sub">Inicializando sistema · v2.1</div>
+  <div class="loader-sub">Inicializando sistema · v2.2</div>
 </div>
 
 <!-- LOGIN -->
@@ -543,7 +606,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
   <div class="login-panel">
     <div class="login-header">
       <div class="login-wordmark">COSA <em>NOSTRA</em></div>
-      <div class="login-sub">Sistema de Gestión v2.1 · Acceso Autorizado</div>
+      <div class="login-sub">Sistema de Gestión v2.2 · Acceso Autorizado</div>
     </div>
     <div class="login-body">
       <div class="lf"><label for="l-email">Correo</label><input type="email" id="l-email" placeholder="admin@cosanostra.mx" autocomplete="email" inputmode="email"></div>
@@ -564,7 +627,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
       <button class="nav-hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menú">
         <div class="hb-line"></div><div class="hb-line"></div><div class="hb-line"></div>
       </button>
-      <div class="nav-brand">COSA <em>NOSTRA</em><span>Gestión Comercial v2.1</span></div>
+      <div class="nav-brand">COSA <em>NOSTRA</em><span>Gestión Comercial v2.2</span></div>
       <div class="nav-status" id="nav-status-bar">
         <div class="status-pill">
           <div class="status-pill-dot gold"></div>
@@ -580,6 +643,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
         </div>
       </div>
       <div class="nav-right">
+        <span id="nav-role-badge" class="role-badge admin" style="display:none">Admin</span>
         <button class="btn-corte-nav" onclick="openCorteModal()">◈ Corte</button>
         <span class="nav-user" id="nav-user-email">—</span>
         <button class="nav-logout" onclick="doLogout()">⏻</button>
@@ -594,7 +658,8 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
   <aside id="sidebar">
     <div class="sidebar-section">
       <div class="sidebar-label">Principal</div>
-      <button class="nav-item active" data-view="dashboard" onclick="showView('dashboard',this)">
+      <!-- Dashboard: solo admin -->
+      <button class="nav-item active" data-view="dashboard" data-admin-only onclick="showView('dashboard',this)">
         <div class="nav-item-icon">◈</div><span class="nav-item-label">Dashboard</span>
       </button>
       <button class="nav-item" data-view="pos" onclick="showView('pos',this)">
@@ -603,32 +668,38 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">Gestión</div>
-      <button class="nav-item" data-view="inventario" onclick="showView('inventario',this)">
+      <button class="nav-item" data-view="inventario" data-admin-only onclick="showView('inventario',this)">
         <div class="nav-item-icon">▣</div><span class="nav-item-label">Inventario</span>
       </button>
-      <button class="nav-item" data-view="ventas" onclick="showView('ventas',this)">
+      <button class="nav-item" data-view="ventas" data-admin-only onclick="showView('ventas',this)">
         <div class="nav-item-icon">✦</div><span class="nav-item-label">Ventas</span>
       </button>
-      <button class="nav-item" data-view="creditos" onclick="showView('creditos',this)">
+      <button class="nav-item" data-view="creditos" data-admin-only onclick="showView('creditos',this)">
         <div class="nav-item-icon">◐</div><span class="nav-item-label">Créditos</span>
       </button>
-      <button class="nav-item" data-view="gastos" onclick="showView('gastos',this)">
+      <button class="nav-item" data-view="gastos" data-admin-only onclick="showView('gastos',this)">
         <div class="nav-item-icon">↓</div><span class="nav-item-label">Gastos</span>
       </button>
-      <button class="nav-item" data-view="metricas" onclick="showView('metricas',this)">
+      <button class="nav-item" data-view="reinversion" data-admin-only onclick="showView('reinversion',this)">
+        <div class="nav-item-icon">↺</div><span class="nav-item-label">Reinversión</span>
+      </button>
+      <button class="nav-item" data-view="metricas" data-admin-only onclick="showView('metricas',this)">
         <div class="nav-item-icon">◎</div><span class="nav-item-label">Métricas &amp; ROI</span>
+      </button>
+      <button class="nav-item" data-view="vendedores" data-admin-only onclick="showView('vendedores',this)">
+        <div class="nav-item-icon">◉</div><span class="nav-item-label">Vendedores</span>
       </button>
     </div>
     <button class="sidebar-corte-btn" onclick="openCorteModal();closeSidebar()">◈ Corte de Caja</button>
     <div class="sidebar-footer">
-      <div class="sf-version">COSA NOSTRA SYS · v2.1<br>Firebase v10 · Chart.js 4 · Gastos Fix</div>
+      <div class="sf-version">COSA NOSTRA SYS · v2.2<br>Reinversión · Roles · Firebase v10</div>
     </div>
   </aside>
 
   <!-- MAIN -->
   <main id="main">
 
-    <!-- ═══ DASHBOARD ═══ -->
+    <!-- ═══ DASHBOARD ═══ (solo admin) -->
     <div class="view active" id="view-dashboard">
       <div class="page-header">
         <div>
@@ -640,7 +711,6 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
         </div>
       </div>
 
-      <!-- Date Filter -->
       <div class="date-filter-bar">
         <span class="date-filter-label">Período:</span>
         <button class="date-range-btn active" data-range="hoy" onclick="setDateRange('hoy',this)">Hoy</button>
@@ -656,7 +726,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
         <div id="growth-indicator" style="margin-left:4px;"></div>
       </div>
 
-      <!-- ══ GASTOS STRIP — siempre visible, desglose inmediato ══ -->
+      <!-- Gastos strip -->
       <div class="gastos-strip" id="dash-gastos-strip">
         <div>
           <div class="gastos-strip-label">↓ Gastos Operativos (Período)</div>
@@ -668,8 +738,19 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
         </div>
       </div>
 
+      <!-- Reinversión strip -->
+      <div class="reinversion-strip" id="dash-reinversion-strip">
+        <div>
+          <div class="reinversion-strip-label">↺ Reinversiones (Período)</div>
+          <div style="font-family:var(--font-mono);font-size:8px;color:rgba(26,188,156,0.5)">Se restan de caja pero NO afectan la ganancia</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="reinversion-strip-value" id="dash-reinversion-periodo">$0.00</div>
+          <div style="font-family:var(--font-mono);font-size:8px;color:rgba(26,188,156,0.5)"><span id="dash-reinversion-count">0</span> reinversiones</div>
+        </div>
+      </div>
+
       <div class="metrics-grid" id="dash-metrics">
-        <!-- Fila 1: Lo más importante -->
         <div class="metric-card accent">
           <div class="metric-tag">Ventas Cobradas en Período</div>
           <div class="metric-value" id="dm-vendido-periodo">$0.00</div>
@@ -682,7 +763,6 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
           <div class="metric-sub">Ventas − Costo − Gastos del período</div>
           <div class="metric-icon">✓</div>
         </div>
-        <!-- Fila 2: Caja real -->
         <div class="metric-card accent">
           <div class="metric-tag">Dinero en Caja (Bruto Histórico)</div>
           <div class="metric-value" id="dm-caja">$0.00</div>
@@ -692,10 +772,9 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
         <div class="metric-card">
           <div class="metric-tag">Efectivo Real en Caja</div>
           <div class="metric-value" id="dm-efectivo">$0.00</div>
-          <div class="metric-sub">Entradas − Cambios − Gastos totales</div>
+          <div class="metric-sub">Entradas − Cambios − Gastos − Reinversiones</div>
           <div class="metric-icon">💵</div>
         </div>
-        <!-- Fila 3: Métricas globales -->
         <div class="metric-card success">
           <div class="metric-tag">Ganancia Neta (Histórica Total)</div>
           <div class="metric-value success-val" id="dm-ganancia">$0.00</div>
@@ -713,6 +792,12 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
           <div class="metric-value danger-val" id="dm-gastos">$0.00</div>
           <div class="metric-sub">Suma total de todos los egresos</div>
           <div class="metric-icon">↓</div>
+        </div>
+        <div class="metric-card teal">
+          <div class="metric-tag">Total Reinversiones (Histórico)</div>
+          <div class="metric-value teal-val" id="dm-reinversiones">$0.00</div>
+          <div class="metric-sub">Dinero reinvertido al negocio (no afecta ganancia)</div>
+          <div class="metric-icon">↺</div>
         </div>
         <div class="metric-card purple">
           <div class="metric-tag">Total por Cobrar</div>
@@ -792,7 +877,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
       </div>
     </div>
 
-    <!-- ═══ INVENTARIO ═══ -->
+    <!-- ═══ INVENTARIO ═══ (solo admin) -->
     <div class="view" id="view-inventario">
       <div class="page-header">
         <div>
@@ -817,7 +902,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
       </div>
     </div>
 
-    <!-- ═══ VENTAS ═══ -->
+    <!-- ═══ VENTAS ═══ (solo admin) -->
     <div class="view" id="view-ventas">
       <div class="page-header">
         <div>
@@ -836,7 +921,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
       </div>
     </div>
 
-    <!-- ═══ CRÉDITOS ═══ -->
+    <!-- ═══ CRÉDITOS ═══ (solo admin) -->
     <div class="view" id="view-creditos">
       <div class="page-header">
         <div>
@@ -860,7 +945,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
       </div>
     </div>
 
-    <!-- ═══ GASTOS ═══ -->
+    <!-- ═══ GASTOS ═══ (solo admin) -->
     <div class="view" id="view-gastos">
       <div class="page-header">
         <div>
@@ -875,11 +960,10 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
         <div class="metric-card danger"><div class="metric-tag">Total Gastos (Histórico)</div><div class="metric-value danger-val" id="g-total">$0.00</div><div class="metric-sub">Se restan del efectivo y ganancia</div></div>
         <div class="metric-card danger"><div class="metric-tag">Gastos Este Mes</div><div class="metric-value danger-val" id="g-mes">$0.00</div></div>
         <div class="metric-card"><div class="metric-tag">Número de Gastos</div><div class="metric-value" id="g-num">0</div></div>
-        <!-- ══ FIX: mostrar cómo impactan en el efectivo ══ -->
         <div class="metric-card">
           <div class="metric-tag">Impacto en Caja</div>
           <div class="metric-value danger-val" id="g-impacto-caja">$0.00</div>
-          <div class="metric-sub">Efectivo Real = Entradas − Cambios − Gastos</div>
+          <div class="metric-sub">Efectivo Real = Entradas − Cambios − Gastos − Reinv.</div>
         </div>
       </div>
       <div class="table-wrap">
@@ -893,7 +977,68 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
       </div>
     </div>
 
-    <!-- ═══ MÉTRICAS ═══ -->
+    <!-- ═══════════════════════════════════════════
+         REINVERSIÓN — NUEVA VISTA
+         Lógica: Saca dinero de caja para
+         reinvertir en el negocio.
+         ✅ Resta de Efectivo Real en Caja
+         ✅ NO afecta la Ganancia Neta
+         (porque es capital que vuelve al negocio)
+    ═══════════════════════════════════════════ -->
+    <div class="view" id="view-reinversion">
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">Capital de Trabajo</div>
+          <h1 class="page-title">Registro de <em>Reinversión</em></h1>
+        </div>
+        <div class="page-actions">
+          <button class="btn-teal" onclick="openReinversionModal()">↺ Registrar Reinversión</button>
+        </div>
+      </div>
+
+      <!-- Explicación clara de la lógica -->
+      <div class="info-box" style="margin-bottom:18px;">
+        <strong>¿Qué es una Reinversión?</strong><br>
+        Es dinero que sale físicamente de la caja para ser usado <strong>en beneficio del negocio</strong> (comprar más inventario, pagar equipo, mejoras, etc.).<br><br>
+        <strong>Efecto en los números:</strong><br>
+        · <span style="color:var(--danger)">Reduce el Efectivo Real en Caja</span> (el dinero ya no está físicamente)<br>
+        · <span style="color:var(--success)">NO reduce la Ganancia Neta</span> (el dinero sigue siendo del negocio, solo cambió de forma)<br>
+        · Diferente a un Gasto: los gastos sí reducen la ganancia porque son costos operativos (renta, sueldos, etc.)
+      </div>
+
+      <div class="metrics-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+        <div class="metric-card teal">
+          <div class="metric-tag">Total Reinvertido (Histórico)</div>
+          <div class="metric-value teal-val" id="r-total">$0.00</div>
+          <div class="metric-sub">Dinero reinvertido al negocio</div>
+        </div>
+        <div class="metric-card teal">
+          <div class="metric-tag">Reinversiones Este Mes</div>
+          <div class="metric-value teal-val" id="r-mes">$0.00</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-tag">Número de Movimientos</div>
+          <div class="metric-value" id="r-num">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-tag">Efectivo Real Actual</div>
+          <div class="metric-value" id="r-efectivo-actual">$0.00</div>
+          <div class="metric-sub">Ya descontando reinversiones</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">↺ Historial de Reinversiones</span></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Fecha</th><th>Concepto</th><th>Destino</th><th>Monto</th><th>Notas</th><th>Acciones</th></tr></thead>
+            <tbody id="reinversion-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MÉTRICAS ═══ (solo admin) -->
     <div class="view" id="view-metricas">
       <div class="page-header">
         <div>
@@ -905,7 +1050,6 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
         </div>
       </div>
 
-      <!-- ══ FIX: Desglose explícito de la fórmula de efectivo ══ -->
       <div style="background:var(--steel-dark);border:1px solid rgba(255,255,255,0.06);padding:14px 18px;margin-bottom:18px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:var(--muted);">
         <div style="color:var(--gold);margin-bottom:8px;letter-spacing:0.18em;text-transform:uppercase;">◈ Fórmula de Efectivo Real</div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:10px;">
@@ -914,8 +1058,21 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
           <span>Cambios: <strong id="m-formula-cambios" style="color:var(--danger)">$0.00</strong></span>
           <span style="color:var(--danger)">−</span>
           <span>Gastos: <strong id="m-formula-gastos" style="color:var(--danger)">$0.00</strong></span>
+          <span style="color:var(--teal)">−</span>
+          <span>Reinversiones: <strong id="m-formula-reinversiones" style="color:var(--teal)">$0.00</strong></span>
           <span style="color:var(--muted)">=</span>
           <span>Efectivo Real: <strong id="m-formula-resultado" style="color:var(--gold);font-size:13px;">$0.00</strong></span>
+        </div>
+        <div style="margin-top:10px;color:var(--gold);letter-spacing:0.18em;text-transform:uppercase;font-size:8px;">◈ Fórmula de Ganancia Neta</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:10px;margin-top:4px;">
+          <span>Vendido: <strong id="m-formula-vendido" style="color:var(--paper)">$0.00</strong></span>
+          <span style="color:var(--danger)">−</span>
+          <span>Costo: <strong id="m-formula-costo" style="color:var(--danger)">$0.00</strong></span>
+          <span style="color:var(--danger)">−</span>
+          <span>Gastos: <strong id="m-formula-gastos2" style="color:var(--danger)">$0.00</strong></span>
+          <span style="color:var(--muted);font-size:9px;">(sin restar reinversiones)</span>
+          <span style="color:var(--muted)">=</span>
+          <span>Ganancia: <strong id="m-formula-ganancia" style="color:var(--success);font-size:13px;">$0.00</strong></span>
         </div>
       </div>
 
@@ -923,32 +1080,34 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
         <div class="roi-cell" style="border-left:3px solid var(--gold);">
           <div class="roi-cell-label">💰 Efectivo Real en Caja</div>
           <div class="roi-cell-value gold" id="m-efectivo">$0.00</div>
-          <div class="roi-cell-sub">Entradas − Cambios − Gastos totales</div>
+          <div class="roi-cell-sub">Entradas − Cambios − Gastos − Reinversiones</div>
         </div>
         <div class="roi-cell" style="border-left:3px solid var(--success);">
           <div class="roi-cell-label">📈 Ganancia Neta Real</div>
           <div class="roi-cell-value success" id="m-ganancia">$0.00</div>
-          <div class="roi-cell-sub">Total vendido − Costo inventario − Gastos</div>
+          <div class="roi-cell-sub">Total vendido − Costo − Gastos (sin reinversiones)</div>
         </div>
         <div class="roi-cell" style="border-left:3px solid var(--info);">
           <div class="roi-cell-label">◎ ROI</div>
           <div class="roi-cell-value gold" id="m-roi">0.00%</div>
           <div class="roi-cell-sub">(Ganancia / Inversión) × 100</div>
         </div>
-        <div class="roi-cell" style="border-left:3px solid var(--muted);">
-          <div class="roi-cell-label">▣ Dinero en Inventario</div>
-          <div class="roi-cell-value" id="m-inv-valor">$0.00</div>
-          <div class="roi-cell-sub">Capital estancado en bodega</div>
+        <div class="roi-cell" style="border-left:3px solid var(--teal);">
+          <div class="roi-cell-label">↺ Total Reinvertido</div>
+          <div class="roi-cell-value" style="color:var(--teal);" id="m-reinversiones">$0.00</div>
+          <div class="roi-cell-sub">Resta de caja, no de ganancia</div>
         </div>
       </div>
+
       <div class="metrics-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
         <div class="metric-card"><div class="metric-tag">Total Vendido (Bruto)</div><div class="metric-value" id="m-bruto">$0.00</div></div>
-        <div class="metric-card danger"><div class="metric-tag">Total Gastos (resta de ganancia)</div><div class="metric-value danger-val" id="m-gastos">$0.00</div></div>
+        <div class="metric-card danger"><div class="metric-tag">Total Gastos</div><div class="metric-value danger-val" id="m-gastos">$0.00</div></div>
         <div class="metric-card purple"><div class="metric-tag">Por Cobrar</div><div class="metric-value purple-val" id="m-creditos">$0.00</div></div>
         <div class="metric-card"><div class="metric-tag">Número de Ventas</div><div class="metric-value" id="m-num">0</div></div>
         <div class="metric-card"><div class="metric-tag">Ticket Promedio</div><div class="metric-value" id="m-ticket">$0.00</div></div>
         <div class="metric-card"><div class="metric-tag">Margen Bruto</div><div class="metric-value" id="m-margen">0.00%</div></div>
       </div>
+
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-card-title">◎ Ventas por Hora (Horas Pico)</div>
@@ -959,6 +1118,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
           <div class="chart-container"><canvas id="chart-categorias"></canvas></div>
         </div>
       </div>
+
       <div class="table-wrap">
         <div class="table-header"><span class="table-title">◈ Productos Más Vendidos</span></div>
         <div class="table-scroll">
@@ -970,23 +1130,58 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
       </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════
+         VENDEDORES — GESTIÓN DE USUARIOS
+         Solo accesible para Admin (UID hardcoded)
+    ═══════════════════════════════════════════ -->
+    <div class="view" id="view-vendedores">
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">Gestión de Accesos</div>
+          <h1 class="page-title">Equipo de <em>Vendedores</em></h1>
+        </div>
+        <div class="page-actions">
+          <button class="btn-primary" onclick="openVendedorModal()">+ Agregar Vendedor</button>
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-bottom:18px;">
+        <strong>Permisos de Vendedores:</strong><br>
+        Los vendedores solo tienen acceso al <strong>Punto de Venta</strong> y al <strong>Corte de Caja</strong>.<br>
+        No pueden ver Dashboard, Inventario, Ventas históricas, Créditos, Gastos, Reinversiones ni Métricas.<br><br>
+        
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">◉ Usuarios Registrados</span></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Correo</th><th>Nombre</th><th>Rol</th><th>Fecha Alta</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="vendedores-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- BOTTOM NAV -->
   <nav id="bottom-nav">
-    <button class="bn-item active" data-view="dashboard" onclick="showView('dashboard',this)">
-      <span class="bn-icon">◈</span><span class="bn-label">Dashboard</span>
-    </button>
-    <button class="bn-item" data-view="pos" onclick="showView('pos',this)">
+    <!-- POS siempre visible -->
+    <button class="bn-item active" data-view="pos" onclick="showView('pos',this)">
       <span class="bn-icon">⬡</span><span class="bn-label">Venta</span>
     </button>
-    <button class="bn-item" data-view="inventario" onclick="showView('inventario',this)">
+    <!-- Solo admin -->
+    <button class="bn-item" data-view="dashboard" data-admin-only onclick="showView('dashboard',this)">
+      <span class="bn-icon">◈</span><span class="bn-label">Dashboard</span>
+    </button>
+    <button class="bn-item" data-view="inventario" data-admin-only onclick="showView('inventario',this)">
       <span class="bn-icon">▣</span><span class="bn-label">Inventario</span>
     </button>
-    <button class="bn-item" data-view="creditos" onclick="showView('creditos',this)">
-      <span class="bn-icon">◐</span><span class="bn-label">Créditos</span>
+    <button class="bn-item" data-view="reinversion" data-admin-only onclick="showView('reinversion',this)">
+      <span class="bn-icon">↺</span><span class="bn-label">Reinv.</span>
     </button>
-    <button class="bn-item" data-view="metricas" onclick="showView('metricas',this)">
+    <button class="bn-item" data-view="metricas" data-admin-only onclick="showView('metricas',this)">
       <span class="bn-icon">◎</span><span class="bn-label">Métricas</span>
     </button>
   </nav>
@@ -1100,6 +1295,97 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════
+     MODAL REINVERSIÓN — NUEVA FUNCIÓN
+     Campos: concepto, destino, monto, notas
+     Guarda en cn_reinversiones
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="reinversion-modal">
+  <div class="modal-panel narrow teal-top">
+    <div class="modal-head">
+      <span class="modal-head-title teal">↺ Registrar Reinversión</span>
+      <button class="modal-close" onclick="document.getElementById('reinversion-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:12px;font-size:8px;">
+        Este monto <strong>saldrá del efectivo en caja</strong> pero <strong>no reducirá la ganancia</strong>.<br>
+        Úsalo para: compra de mercancía, equipo, mejoras al local, etc.
+      </div>
+      <div class="fgrp"><label>Concepto *</label><input type="text" id="rv-concepto" placeholder="Ej: Compra de inventario nuevo"></div>
+      <div class="form-row">
+        <div class="fgrp"><label>Destino *</label>
+          <select id="rv-destino">
+            <option value="" disabled selected>— Seleccionar —</option>
+            <option>Compra de Inventario</option>
+            <option>Equipo y Herramientas</option>
+            <option>Mejoras al Local</option>
+            <option>Tecnología</option>
+            <option>Capacitación</option>
+            <option>Marketing</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div class="fgrp"><label>Monto (MXN) *</label><input type="number" id="rv-monto" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div>
+      </div>
+      <div class="fgrp"><label>Notas</label><input type="text" id="rv-notas" placeholder="Descripción detallada (opcional)"></div>
+
+      <!-- Muestra cuánto efectivo quedará después -->
+      <div id="rv-preview" style="background:var(--steel-dark);border:1px solid rgba(26,188,156,0.2);padding:12px 14px;margin-top:4px;display:none;">
+        <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;">Vista previa de impacto en caja:</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">Efectivo actual:</span>
+          <span style="font-family:var(--font-display);font-size:16px;color:var(--paper)" id="rv-preview-antes">$0.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+          <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">Después de reinversión:</span>
+          <span style="font-family:var(--font-display);font-size:18px;" id="rv-preview-despues">$0.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+          <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">Ganancia (sin cambio):</span>
+          <span style="font-family:var(--font-display);font-size:14px;color:var(--success)" id="rv-preview-ganancia">$0.00</span>
+        </div>
+      </div>
+
+      <div class="merror" id="rv-err">Completa todos los campos obligatorios.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('reinversion-modal').classList.remove('open')">Cancelar</button>
+      <button class="btn-teal" onclick="saveReinversion()" id="rv-save-btn" style="min-height:44px;">↺ Confirmar Reinversión</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL VENDEDOR — NUEVA FUNCIÓN
+     Admin crea cuenta en Firebase Auth (Client SDK)
+     Guarda perfil en cn_usuarios
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="vendedor-modal">
+  <div class="modal-panel narrow">
+    <div class="modal-head">
+      <span class="modal-head-title">◉ Agregar Vendedor</span>
+      <button class="modal-close" onclick="document.getElementById('vendedor-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:12px;font-size:8px;">
+        Se creará una cuenta en Firebase Auth con rol <strong>vendedor</strong>.<br>
+        El vendedor solo podrá acceder al <strong>Punto de Venta</strong> y <strong>Corte de Caja</strong>.
+      </div>
+      <div class="fgrp"><label>Nombre del Vendedor *</label><input type="text" id="vd-nombre" placeholder="Ej: María López" autocomplete="off"></div>
+      <div class="fgrp"><label>Correo Electrónico *</label><input type="email" id="vd-email" placeholder="vendedor@cosanostra.mx" inputmode="email"></div>
+      <div class="form-row">
+        <div class="fgrp"><label>Contraseña Temporal *</label><input type="password" id="vd-pass" placeholder="Mínimo 6 caracteres"></div>
+        <div class="fgrp"><label>Confirmar Contraseña *</label><input type="password" id="vd-pass2" placeholder="Repetir contraseña"></div>
+      </div>
+      <div class="merror" id="vd-err">Error al crear el vendedor.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('vendedor-modal').classList.remove('open')">Cancelar</button>
+      <button class="btn-primary" onclick="saveVendedor()" id="vd-save-btn">Crear Vendedor →</button>
+    </div>
+  </div>
+</div>
+
 <!-- Corte de Caja Modal -->
 <div class="modal-overlay" id="corte-modal">
   <div class="modal-panel corte">
@@ -1113,6 +1399,7 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
         <div class="corte-row"><span class="corte-row-label">Total recibido de clientes (pagoCon)</span><span class="corte-row-value" id="corte-entradas">$0.00</span></div>
         <div class="corte-row"><span class="corte-row-label">Cambio devuelto a clientes</span><span class="corte-row-value" style="color:var(--danger);" id="corte-cambio-total">−$0.00</span></div>
         <div class="corte-row"><span class="corte-row-label">Gastos operativos (cn_gastos)</span><span class="corte-row-value" style="color:var(--danger);" id="corte-gastos">−$0.00</span></div>
+        <div class="corte-row"><span class="corte-row-label">Reinversiones registradas</span><span class="corte-row-value" style="color:var(--teal);" id="corte-reinversiones">−$0.00</span></div>
         <div class="corte-row" style="border-top:1px solid rgba(200,152,10,0.2);padding-top:10px;margin-top:4px;">
           <span class="corte-row-label" style="color:var(--gold);font-weight:700;">Efectivo esperado en caja</span>
           <span class="corte-row-value" style="color:var(--gold);font-size:22px;" id="corte-esperado">$0.00</span>
@@ -1158,7 +1445,8 @@ tbody td { padding: 9px 12px; font-size: 12px; color: var(--light); vertical-ali
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, browserSessionPersistence, setPersistence
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged, browserSessionPersistence, setPersistence
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
   getFirestore, doc, collection, addDoc, updateDoc, deleteDoc,
@@ -1174,54 +1462,93 @@ const FB = {
   messagingSenderId: "785165056789",
   appId: "1:785165056789:web:72f69d4226a8b4d70d871c"
 };
-const app  = initializeApp(FB, 'cosanostra-v21');
+const app  = initializeApp(FB, 'cosanostra-v22');
 const auth = getAuth(app);
 const db   = getFirestore(app);
 await setPersistence(auth, browserSessionPersistence);
 
+/* ══════════════════════════════════════════════════
+   ROLES — SISTEMA DE PERMISOS
+   ──────────────────────────────────────────────────
+   ADMIN_UID: el único usuario que puede ver todo,
+   gestionar vendedores y registrar reinversiones.
+   
+   Cualquier otro UID = vendedor con acceso restringido.
+   
+   El rol también se persiste en cn_usuarios para
+   poder mostrarlo en la tabla de vendedores.
+══════════════════════════════════════════════════ */
+const ADMIN_UID = 'L4xKlU0he3ODXAcC8Wptr6aqu662';
+
+let currentUserUID  = null;
+let isAdmin         = false;
+
+function applyRoleUI() {
+  const body = document.body;
+  if (isAdmin) {
+    body.classList.add('is-admin');
+    const badge = document.getElementById('nav-role-badge');
+    if (badge) { badge.textContent = 'Admin'; badge.className = 'role-badge admin'; badge.style.display = 'inline-flex'; }
+  } else {
+    body.classList.remove('is-admin');
+    const badge = document.getElementById('nav-role-badge');
+    if (badge) { badge.textContent = 'Vendedor'; badge.className = 'role-badge vendedor'; badge.style.display = 'inline-flex'; }
+    // Redirigir a POS si el vendedor intenta ver una vista restringida
+    const activeView = document.querySelector('.view.active');
+    if (activeView && activeView.id !== 'view-pos') {
+      showView('pos', document.querySelector('[data-view=pos]'));
+    }
+  }
+}
+
 /* ── COLLECTIONS ── */
-const COL_PROD   = collection(db, 'cn_productos');
-const COL_VENTAS = collection(db, 'cn_ventas');
-const COL_GASTOS = collection(db, 'cn_gastos');
-const COL_CRED   = collection(db, 'cn_creditos');
-const COL_CORTES = collection(db, 'cn_cortes');
-const REF_CAJA   = doc(db, 'cn_caja', 'estado');
+const COL_PROD      = collection(db, 'cn_productos');
+const COL_VENTAS    = collection(db, 'cn_ventas');
+const COL_GASTOS    = collection(db, 'cn_gastos');
+const COL_CRED      = collection(db, 'cn_creditos');
+const COL_CORTES    = collection(db, 'cn_cortes');
+const COL_REINV     = collection(db, 'cn_reinversiones'); // ← NUEVA colección
+const COL_USUARIOS  = collection(db, 'cn_usuarios');      // ← NUEVA colección
+const REF_CAJA      = doc(db, 'cn_caja', 'estado');
 
 /* ── STATE ── */
-let productos = [], ventas = [], gastos = [], creditos = [];
+let productos = [], ventas = [], gastos = [], creditos = [], reinversiones = [], usuarios = [];
 let cajaData = {
-  totalEntradas: 0,
-  totalCambioDevuelto: 0,
-  totalVendido: 0,
-  totalCosto: 0,
-  numVentas: 0
+  totalEntradas: 0, totalCambioDevuelto: 0,
+  totalVendido: 0, totalCosto: 0, numVentas: 0
 };
 let cart = [], posCurrentCat = 'Todos', unsubs = [];
 let currentDateRange = 'hoy';
 let chartHoras = null, chartCats = null;
 let isCredit = false;
 
-/* ══════════════════════════════════════════
-   HELPER CENTRAL DE GASTOS
-   ─────────────────────────────────────────
-   Todas las métricas de gastos pasan
-   por esta función. Nunca calcular inline.
-══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   HELPERS CENTRALES DE CÁLCULO
+   ──────────────────────────────────────────────────
+   PRINCIPIO CLAVE — REINVERSIÓN vs GASTO:
+   
+   GASTO:       Dinero que sale del negocio para siempre
+                (renta, sueldos, servicios). Resta de CAJA y de GANANCIA.
+   
+   REINVERSIÓN: Dinero que sale de la caja física pero
+                permanece en el negocio (compra inventario, equipo).
+                Resta de CAJA pero NO de GANANCIA.
+══════════════════════════════════════════════════ */
 
-/**
- * Retorna el total de TODOS los gastos históricos.
- * Fórmula: Σ gasto.monto  (colección cn_gastos completa)
- */
 function calcTotalGastosHistorico() {
   return gastos.reduce((sum, g) => sum + (g.monto || 0), 0);
 }
 
 /**
- * Retorna gastos filtrados por un DateBounds { start, end }.
- * Si start es null → devuelve todos (período "Todo").
+ * NUEVO: Total reinvertido histórico.
+ * Viene de cn_reinversiones.
  */
+function calcTotalReinversionesHistorico() {
+  return reinversiones.reduce((sum, r) => sum + (r.monto || 0), 0);
+}
+
 function calcGastosByBounds(bounds) {
-  if (!bounds.start) return gastos; // "Todo el tiempo"
+  if (!bounds.start) return gastos;
   return gastos.filter(g => {
     const f = g.fecha?.toDate ? g.fecha.toDate() : new Date(g.fecha || 0);
     return f >= bounds.start && f <= bounds.end;
@@ -1229,74 +1556,85 @@ function calcGastosByBounds(bounds) {
 }
 
 /**
- * Retorna el total de gastos para un bounds dado.
+ * NUEVO: Reinversiones filtradas por período.
  */
+function calcReinversionesByBounds(bounds) {
+  if (!bounds.start) return reinversiones;
+  return reinversiones.filter(r => {
+    const f = r.fecha?.toDate ? r.fecha.toDate() : new Date(r.fecha || 0);
+    return f >= bounds.start && f <= bounds.end;
+  });
+}
+
 function calcTotalGastosPeriodo(bounds) {
   return calcGastosByBounds(bounds).reduce((sum, g) => sum + (g.monto || 0), 0);
 }
 
-/**
- * Calcula el Efectivo Real en Caja.
- *
- * FÓRMULA:
- *   Efectivo Real = totalEntradas (pagoCon) − totalCambioDevuelto − totalGastosHistorico
- *
- * - totalEntradas: dinero físico que entró a la caja (lo que pagó cada cliente)
- * - totalCambioDevuelto: lo que se devolvió como cambio (sale de caja)
- * - totalGastosHistorico: todos los gastos pagados (salen de caja)
- *
- * Los gastos se leen de cn_gastos (listener en tiempo real), NO de cajaData,
- * de modo que cualquier gasto recién registrado actualiza este valor
- * inmediatamente sin requerir una venta.
- */
-function calcEfectivoReal() {
-  const entradas  = cajaData.totalEntradas || 0;
-  const cambios   = cajaData.totalCambioDevuelto || 0;
-  const gastosTot = calcTotalGastosHistorico();          // ← LIVE desde cn_gastos
-  return entradas - cambios - gastosTot;
+function calcTotalReinversionesPeriodo(bounds) {
+  return calcReinversionesByBounds(bounds).reduce((sum, r) => sum + (r.monto || 0), 0);
 }
 
 /**
- * Calcula la Ganancia Neta histórica.
+ * EFECTIVO REAL EN CAJA
  *
  * FÓRMULA:
- *   Ganancia Neta = totalVendido − totalCosto − totalGastosHistorico
+ *   Efectivo = Entradas − Cambios − Gastos − Reinversiones
  *
- * - totalVendido: suma de precioVenta × qty de ventas cobradas
- * - totalCosto: suma de precioCosto × qty de ventas cobradas
- * - totalGastosHistorico: egresos operativos (cn_gastos)
+ * ✅ Reinversiones restan de caja (el dinero físicamente salió)
+ * ✅ Ganancia NO se ve afectada por reinversiones
+ */
+function calcEfectivoReal() {
+  const entradas     = cajaData.totalEntradas || 0;
+  const cambios      = cajaData.totalCambioDevuelto || 0;
+  const gastosTot    = calcTotalGastosHistorico();
+  const reinvTot     = calcTotalReinversionesHistorico();  // ← NUEVO
+  return entradas - cambios - gastosTot - reinvTot;
+}
+
+/**
+ * GANANCIA NETA
  *
- * Resultado puede ser negativo (pérdida operativa).
+ * FÓRMULA:
+ *   Ganancia = Vendido − Costo − Gastos
+ *
+ * ✅ Las Reinversiones NO se restan (es capital del negocio, no un costo)
+ * ✅ Solo los Gastos operativos reducen la ganancia
  */
 function calcGananciaNeta() {
-  const vendido  = cajaData.totalVendido || 0;
-  const costo    = cajaData.totalCosto || 0;
+  const vendido   = cajaData.totalVendido || 0;
+  const costo     = cajaData.totalCosto || 0;
   const gastosTot = calcTotalGastosHistorico();
+  // Las reinversiones NO se restan aquí (esa es la diferencia clave)
   return vendido - costo - gastosTot;
 }
 
-/**
- * Calcula Ganancia Neta para un período específico.
- * Usa ventas filtradas y gastos filtrados del mismo período.
- *
- * FÓRMULA (período):
- *   Ganancia Período = Σ(ventasPeriodo.totalVenta) − Σ(ventasPeriodo.totalCosto) − gastosPeriodo
- */
 function calcGananciaNetaPeriodo(bounds) {
   const ventasPeriodo = filterVentasByRange(bounds)
     .filter(v => !v.esCredito || v.estado === 'cobrado');
   const ventadoPeriodo = ventasPeriodo.reduce((s, v) => s + (v.totalVenta || 0), 0);
   const costoPeriodo   = ventasPeriodo.reduce((s, v) => s + (v.totalCosto || 0), 0);
   const gastosPeriodo  = calcTotalGastosPeriodo(bounds);
+  // Sin reinversiones en ganancia
   return ventadoPeriodo - costoPeriodo - gastosPeriodo;
 }
 
 /* ══ AUTH ══ */
 onAuthStateChanged(auth, async user => {
   if (user) {
+    currentUserUID = user.uid;
+    isAdmin = (user.uid === ADMIN_UID);
     document.getElementById('nav-user-email').textContent = user.email;
-    showApp(); initListeners();
-  } else { hideApp(); stopListeners(); }
+    showApp();
+    applyRoleUI();
+    initListeners();
+    // Si es vendedor, ir directo al POS
+    if (!isAdmin) {
+      setTimeout(() => showView('pos', document.querySelector('[data-view=pos]')), 100);
+    }
+  } else {
+    currentUserUID = null; isAdmin = false;
+    hideApp(); stopListeners();
+  }
 });
 
 window.doLogin = async () => {
@@ -1327,7 +1665,7 @@ function hideApp() {
   document.getElementById('login-screen').classList.add('show');
 }
 
-/* ══ SIDEBAR TOGGLE ══ */
+/* ══ SIDEBAR ══ */
 window.toggleSidebar = () => {
   const sb = document.getElementById('sidebar');
   const ov = document.getElementById('sidebar-overlay');
@@ -1352,12 +1690,9 @@ function initListeners() {
     ventas = snap.docs.map(d => ({ id:d.id, ...d.data() }));
     renderVentas(); updateDashRecentSales(); refreshAll();
   });
-  /* ══ FIX: el listener de gastos llama refreshAll()
-     Esto garantiza que en cuanto se registra un gasto,
-     TODOS los cálculos se recalculan instantáneamente. ══ */
   const u3 = onSnapshot(query(COL_GASTOS, orderBy('fecha','desc')), snap => {
     gastos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    renderGastos(); refreshAll(); // ← refreshAll asegura que efectivo y ganancia se actualicen
+    renderGastos(); refreshAll();
   });
   const u4 = onSnapshot(query(COL_CRED, orderBy('fecha','desc')), snap => {
     creditos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -1369,26 +1704,48 @@ function initListeners() {
     };
     refreshAll();
   });
-  unsubs = [u1,u2,u3,u4,u5];
+  /* ══ NUEVO: Listener en tiempo real para reinversiones ══ */
+  const u6 = onSnapshot(query(COL_REINV, orderBy('fecha','desc')), snap => {
+    reinversiones = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderReinversiones(); refreshAll();
+  });
+  /* ══ NUEVO: Listener para usuarios/vendedores (solo admin) ══ */
+  const u7 = onSnapshot(query(COL_USUARIOS, orderBy('creadoEn','desc')), snap => {
+    usuarios = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderVendedores();
+  });
+  unsubs = [u1, u2, u3, u4, u5, u6, u7];
 }
 function stopListeners() { unsubs.forEach(u => u && u()); unsubs = []; }
 
 function refreshAll() {
-  updateNavBar(); updateDashMetrics(); calcMetrics();
-  // Actualizar tarjeta de impacto en vista de gastos
-  updateGastosImpact();
-  if (document.getElementById('view-metricas').classList.contains('active')) renderCharts();
+  updateNavBar();
+  if (isAdmin) {
+    updateDashMetrics();
+    calcMetrics();
+    updateGastosImpact();
+    updateReinversionView();
+  }
+  if (document.getElementById('view-metricas').classList.contains('active') && isAdmin) {
+    renderCharts();
+  }
 }
 
-/* ══ NAV ══ */
+/* ══ NAV VIEW ══ */
 window.showView = (viewId, btn) => {
+  // Bloquear vistas admin para vendedores
+  const adminViews = ['dashboard','inventario','ventas','creditos','gastos','reinversion','metricas','vendedores'];
+  if (!isAdmin && adminViews.includes(viewId)) {
+    toast('Acceso restringido. Consulta al administrador.', 'error');
+    return;
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item, .bn-item').forEach(n => n.classList.remove('active'));
   const v = document.getElementById('view-' + viewId);
   if (v) v.classList.add('active');
   document.querySelectorAll(`[data-view="${viewId}"]`).forEach(el => el.classList.add('active'));
   closeSidebar();
-  if (viewId === 'metricas') { calcMetrics(); setTimeout(renderCharts, 80); }
+  if (viewId === 'metricas' && isAdmin) { calcMetrics(); setTimeout(renderCharts, 80); }
 };
 
 /* ══ FORMAT ══ */
@@ -1401,7 +1758,7 @@ window.setDateRange = (range, btn) => {
   document.querySelectorAll('.date-range-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   updateDashMetrics();
-  if (document.getElementById('view-metricas').classList.contains('active')) {
+  if (document.getElementById('view-metricas').classList.contains('active') && isAdmin) {
     calcMetrics(); setTimeout(renderCharts, 80);
   }
 };
@@ -1441,8 +1798,7 @@ function filterVentasByRange(bounds) {
 
 /* ══ NAVBAR ══ */
 function updateNavBar() {
-  // Efectivo real usa helper centralizado
-  const efectivoReal = calcEfectivoReal();
+  const efectivoReal = calcEfectivoReal(); // incluye descuento de reinversiones
   document.getElementById('nav-caja').textContent = fmt(efectivoReal);
 
   const hoy = new Date().toDateString();
@@ -1456,33 +1812,31 @@ function updateNavBar() {
   document.getElementById('nav-creditos').textContent = fmt(pendCred);
 }
 
-/* ══ DASHBOARD METRICS ══
-   CORRECCIÓN PRINCIPAL:
-   - dm-efectivo usa calcEfectivoReal() que resta gastos en tiempo real
-   - dm-ganancia usa calcGananciaNeta() que también resta gastos
-   - dm-ganancia-periodo usa calcGananciaNetaPeriodo() con gastos del mismo período
-   - dash-gastos-strip muestra el total de gastos del período seleccionado
-   ════════════════════════════════════════════════════════════════════ */
+/* ══ DASHBOARD METRICS ══ */
 function updateDashMetrics() {
   const bounds = getDateBounds();
   const ventasPeriodo = filterVentasByRange(bounds);
   const cobradosEnPeriodo = ventasPeriodo.filter(v => !v.esCredito || v.estado==='cobrado');
   const ventadoPeriodo = cobradosEnPeriodo.reduce((s,v) => s+(v.totalVenta||0), 0);
 
-  // ── Gastos del período para el strip ──
-  const gastosPeriodo      = calcTotalGastosPeriodo(bounds);
-  const gastosPeriodoCount = calcGastosByBounds(bounds).length;
+  const gastosPeriodo       = calcTotalGastosPeriodo(bounds);
+  const gastosPeriodoCount  = calcGastosByBounds(bounds).length;
+  const reinvPeriodo        = calcTotalReinversionesPeriodo(bounds);
+  const reinvPeriodoCount   = calcReinversionesByBounds(bounds).length;
 
-  // ── Gastos strip: siempre visible, muestra total del período ──
-  const stripEl = document.getElementById('dash-gastos-periodo');
-  const countEl = document.getElementById('dash-gastos-count');
-  if (stripEl) stripEl.textContent = fmt(gastosPeriodo);
-  if (countEl) countEl.textContent = gastosPeriodoCount;
+  // Strips
+  const stripGastos  = document.getElementById('dash-gastos-periodo');
+  const countGastos  = document.getElementById('dash-gastos-count');
+  const stripReinv   = document.getElementById('dash-reinversion-periodo');
+  const countReinv   = document.getElementById('dash-reinversion-count');
+  if (stripGastos) stripGastos.textContent = fmt(gastosPeriodo);
+  if (countGastos) countGastos.textContent = gastosPeriodoCount;
+  if (stripReinv) stripReinv.textContent = fmt(reinvPeriodo);
+  if (countReinv) countReinv.textContent = reinvPeriodoCount;
 
-  // ── Ganancia del período (ventas − costo − gastos del mismo período) ──
   const gananciaPeriodo = calcGananciaNetaPeriodo(bounds);
 
-  // ── Comparativo vs período anterior ──
+  // Comparativo
   let growthHTML = '';
   if (['hoy','semana','mes'].includes(currentDateRange)) {
     const now = new Date();
@@ -1508,29 +1862,26 @@ function updateDashMetrics() {
   }
   document.getElementById('growth-indicator').innerHTML = growthHTML;
 
-  // ── Métricas globales (históricas) — usan helpers centralizados ──
   const totalGastosHist  = calcTotalGastosHistorico();
+  const totalReinvHist   = calcTotalReinversionesHistorico();
   const pendCred         = creditos.filter(c=>c.estado==='pendiente').reduce((s,c)=>s+(c.monto||0), 0);
-  const gananciaGlobal   = calcGananciaNeta();      // totalVendido − totalCosto − gastos
-  const efectivoReal     = calcEfectivoReal();      // entradas − cambios − gastos
+  const gananciaGlobal   = calcGananciaNeta();
+  const efectivoReal     = calcEfectivoReal();
   const roi              = (cajaData.totalCosto||0) > 0 ? (gananciaGlobal / (cajaData.totalCosto||0)) * 100 : 0;
   const invValor         = calcInvValor();
   const stockBajo        = productos.filter(p => (p.stock||0) <= 2).length;
 
-  // ── Aplicar valores al DOM ──
-  document.getElementById('dm-vendido-periodo').textContent   = fmt(ventadoPeriodo);
-  document.getElementById('dm-sub-periodo').textContent       = bounds.label;
-  document.getElementById('dm-ganancia-periodo').textContent  = fmt(gananciaPeriodo);
-  document.getElementById('dm-ganancia-periodo').className    = 'metric-value ' + (gananciaPeriodo>=0?'success-val':'danger-val');
-
+  document.getElementById('dm-vendido-periodo').textContent  = fmt(ventadoPeriodo);
+  document.getElementById('dm-sub-periodo').textContent      = bounds.label;
+  document.getElementById('dm-ganancia-periodo').textContent = fmt(gananciaPeriodo);
+  document.getElementById('dm-ganancia-periodo').className   = 'metric-value ' + (gananciaPeriodo>=0?'success-val':'danger-val');
   document.getElementById('dm-caja').textContent     = fmt(cajaData.totalEntradas||0);
   document.getElementById('dm-efectivo').textContent = fmt(efectivoReal);
-
   document.getElementById('dm-ganancia').textContent = fmt(gananciaGlobal);
   document.getElementById('dm-ganancia').className   = 'metric-value ' + (gananciaGlobal>=0?'success-val':'danger-val');
-
   document.getElementById('dm-roi').textContent      = pct(roi);
   document.getElementById('dm-gastos').textContent   = fmt(totalGastosHist);
+  document.getElementById('dm-reinversiones').textContent = fmt(totalReinvHist);
   document.getElementById('dm-creditos').textContent = fmt(pendCred);
   document.getElementById('dm-inv-valor').textContent= fmt(invValor);
   document.getElementById('dm-num-ventas').textContent= cajaData.numVentas || 0;
@@ -1541,27 +1892,32 @@ function calcInvValor() {
   return productos.reduce((s,p) => s + (p.precioCosto||0) * (p.stock||0), 0);
 }
 
-/* ══ FIX: Actualizar tarjeta de impacto en vista de Gastos ══ */
 function updateGastosImpact() {
   const el = document.getElementById('g-impacto-caja');
   if (!el) return;
   const efectivo = calcEfectivoReal();
   el.textContent = fmt(efectivo);
-  // Color verde si positivo, rojo si negativo
   el.className = 'metric-value ' + (efectivo >= 0 ? 'success-val' : 'danger-val');
+}
+
+/* ══ NUEVA: Actualizar vista de Reinversión ══ */
+function updateReinversionView() {
+  const el_r   = document.getElementById('r-efectivo-actual');
+  if (el_r) { el_r.textContent = fmt(calcEfectivoReal()); }
+  const el_ef = document.getElementById('g-impacto-caja');
+  if (el_ef) { el_ef.textContent = fmt(calcEfectivoReal()); el_ef.className = 'metric-value ' + (calcEfectivoReal()>=0?'success-val':'danger-val'); }
 }
 
 function updateDashRecentSales() {
   const c = document.getElementById('dash-recent-sales');
   const recent = ventas.slice(0,6);
   if (!recent.length) {
-    c.innerHTML = `<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">Sin ventas aún</div></div>`;
+    c.innerHTML = `<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">Sin ventas registradas aún</div></div>`;
     return;
   }
   c.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Folio</th><th>Fecha</th><th>Items</th><th>Total</th><th>Tipo</th><th>Ganancia Venta</th></tr></thead><tbody>
     ${recent.map(v => {
       const f = v.fecha?.toDate ? v.fecha.toDate() : new Date(v.fecha||0);
-      // Ganancia bruta de la venta (sin prorratea gastos operativos)
       const g = (v.totalVenta||0) - (v.totalCosto||0);
       const tipo = v.esCredito ? `<span class="status-badge ${v.estado==='cobrado'?'paid':'pending'}">${v.estado==='cobrado'?'COBRADO':'CRÉDITO'}</span>` : `<span class="status-badge paid">CONTADO</span>`;
       return `<tr><td class="td-mono" style="color:var(--gold)">${v.folio||'—'}</td><td class="td-mono" style="font-size:9px">${f.toLocaleString('es-MX')}</td><td>${(v.items||[]).length} pzs.</td><td class="td-gold">${fmt(v.totalVenta)}</td><td>${tipo}</td><td class="${g>=0?'td-success':'td-danger'}">${fmt(g)}</td></tr>`;
@@ -2017,7 +2373,6 @@ function renderGastos(){
   document.getElementById('g-total').textContent=fmt(totalG);
   document.getElementById('g-mes').textContent=fmt(mesG);
   document.getElementById('g-num').textContent=gastos.length;
-  // g-impacto-caja se actualiza en updateGastosImpact() vía refreshAll()
 
   const tbody=document.getElementById('gastos-tbody');
   if(!gastos.length){
@@ -2038,44 +2393,336 @@ function renderGastos(){
 }
 window.deleteGasto = async (id) => {
   if(!confirm('¿Eliminar este gasto?'))return;
-  try{await deleteDoc(doc(db,'cn_gastos',id));toast('Gasto eliminado. El efectivo se actualizó.','info');}
+  try{await deleteDoc(doc(db,'cn_gastos',id));toast('Gasto eliminado.','info');}
   catch(e){toast('Error al eliminar.','error');}
 };
 
-/* ══ MÉTRICAS ══
-   FIX: Todos los cálculos usan los helpers centralizados.
-   Se muestra el desglose explícito de la fórmula de efectivo real.
-   ══════════════════════════════════════════════════════════════ */
-window.calcMetrics = () => {
-  const totalVendido  = cajaData.totalVendido || 0;
-  const totalCosto    = cajaData.totalCosto || 0;
-  const totalGastos   = calcTotalGastosHistorico();      // ← helper centralizado
-  const pendCred      = creditos.filter(c=>c.estado==='pendiente').reduce((s,c)=>s+(c.monto||0),0);
-  const num           = cajaData.numVentas || 0;
-  const ganancia      = calcGananciaNeta();               // ← helper centralizado
-  const efectivo      = calcEfectivoReal();               // ← helper centralizado
-  const roi           = totalCosto > 0 ? (ganancia/totalCosto)*100 : 0;
-  const ticket        = num > 0 ? totalVendido/num : 0;
-  const margen        = totalVendido > 0 ? (ganancia/totalVendido)*100 : 0;
-  const invValor      = calcInvValor();
-  const entradas      = cajaData.totalEntradas || 0;
-  const cambios       = cajaData.totalCambioDevuelto || 0;
+/* ══════════════════════════════════════════════════════
+   REINVERSIÓN — NUEVA FUNCIONALIDAD COMPLETA
+   ──────────────────────────────────────────────────────
+   Colección: cn_reinversiones
+   Campos: concepto, destino, monto, notas, fecha, creadoPor
+   
+   Impacto en métricas:
+   - calcEfectivoReal() → RESTA reinversiones
+   - calcGananciaNeta() → NO resta reinversiones
+══════════════════════════════════════════════════════ */
 
-  // ── Desglose de fórmula visible en Métricas ──
+window.openReinversionModal = () => {
+  ['rv-concepto','rv-monto','rv-notas'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('rv-destino').value='';
+  document.getElementById('rv-err').classList.remove('show');
+  document.getElementById('rv-preview').style.display='none';
+  document.getElementById('reinversion-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('rv-concepto').focus(),150);
+};
+
+// Actualizar preview al cambiar el monto
+document.getElementById('rv-monto').addEventListener('input', () => {
+  const monto = parseFloat(document.getElementById('rv-monto').value) || 0;
+  const efectivoActual = calcEfectivoReal();
+  const despues = efectivoActual - monto;
+  const ganancia = calcGananciaNeta();
+  const preview = document.getElementById('rv-preview');
+  if (monto > 0) {
+    preview.style.display = 'block';
+    document.getElementById('rv-preview-antes').textContent = fmt(efectivoActual);
+    const despuesEl = document.getElementById('rv-preview-despues');
+    despuesEl.textContent = fmt(despues);
+    despuesEl.style.color = despues >= 0 ? 'var(--teal)' : 'var(--danger)';
+    document.getElementById('rv-preview-ganancia').textContent = fmt(ganancia) + ' (sin cambio)';
+  } else {
+    preview.style.display = 'none';
+  }
+});
+
+window.saveReinversion = async () => {
+  const err = document.getElementById('rv-err');
+  const btn = document.getElementById('rv-save-btn');
+  err.classList.remove('show');
+
+  const concepto = document.getElementById('rv-concepto').value.trim();
+  const destino  = document.getElementById('rv-destino').value;
+  const monto    = parseFloat(document.getElementById('rv-monto').value) || 0;
+  const notas    = document.getElementById('rv-notas').value.trim();
+
+  if (!concepto || !destino || monto <= 0) {
+    err.textContent = 'Completa todos los campos obligatorios.';
+    err.classList.add('show'); return;
+  }
+
+  // Advertencia si no hay suficiente efectivo
+  const efectivoActual = calcEfectivoReal();
+  if (monto > efectivoActual) {
+    const ok = confirm(
+      `⚠ ADVERTENCIA\n\nEl monto a reinvertir ($${monto.toFixed(2)}) es mayor al efectivo real disponible ($${efectivoActual.toFixed(2)}).\n\n¿Deseas continuar de todas formas?`
+    );
+    if (!ok) return;
+  }
+
+  btn.disabled = true; btn.textContent = '⟳ Registrando...';
+  try {
+    await addDoc(COL_REINV, {
+      concepto, destino, monto, notas,
+      fecha: serverTimestamp(),
+      creadoPor: currentUserUID,
+    });
+    document.getElementById('reinversion-modal').classList.remove('open');
+    toast(`↺ Reinversión de ${fmt(monto)} registrada. El efectivo en caja se actualizó.`, 'success');
+  } catch (e) {
+    err.textContent = '⚠ Error: ' + e.message;
+    err.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = '↺ Confirmar Reinversión';
+  }
+};
+
+function renderReinversiones() {
+  const totalR = reinversiones.reduce((s,r) => s+(r.monto||0), 0);
+  const now = new Date();
+  const mesR = reinversiones.filter(r => {
+    const f = r.fecha?.toDate ? r.fecha.toDate() : new Date(r.fecha||0);
+    return f.getMonth()===now.getMonth() && f.getFullYear()===now.getFullYear();
+  }).reduce((s,r) => s+(r.monto||0), 0);
+
+  const elTotal = document.getElementById('r-total');
+  const elMes   = document.getElementById('r-mes');
+  const elNum   = document.getElementById('r-num');
+  if (elTotal) elTotal.textContent = fmt(totalR);
+  if (elMes)   elMes.textContent   = fmt(mesR);
+  if (elNum)   elNum.textContent   = reinversiones.length;
+
+  const tbody = document.getElementById('reinversion-tbody');
+  if (!tbody) return;
+  if (!reinversiones.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:32px;"><div class="empty-state" style="border:none;"><div class="empty-icon">↺</div><div class="empty-text">Sin reinversiones registradas</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = reinversiones.map(r => {
+    const f = r.fecha?.toDate ? r.fecha.toDate() : new Date(r.fecha||0);
+    return `<tr>
+      <td class="td-mono" style="font-size:9px">${f.toLocaleString('es-MX')}</td>
+      <td><strong style="color:var(--paper)">${r.concepto}</strong></td>
+      <td><span class="status-badge reinversion">${r.destino||'—'}</span></td>
+      <td class="td-teal" style="font-family:var(--font-display);font-size:16px">−${fmt(r.monto)}<div style="font-family:var(--font-mono);font-size:7px;color:var(--teal);opacity:0.6">solo de caja</div></td>
+      <td style="font-size:11px;color:var(--muted)">${r.notas||'—'}</td>
+      <td><button class="btn-danger" onclick="deleteReinversion('${r.id}','${r.concepto}',${r.monto})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+window.deleteReinversion = async (id, concepto, monto) => {
+  if (!confirm(`¿Eliminar la reinversión "${concepto}" (${fmt(monto)})?\n\nEl efectivo en caja se restaurará.`)) return;
+  try {
+    await deleteDoc(doc(db, 'cn_reinversiones', id));
+    toast('Reinversión eliminada. El efectivo se restauró.', 'info');
+  } catch(e) { toast('Error al eliminar.', 'error'); }
+};
+
+/* ══════════════════════════════════════════════════════
+   VENDEDORES — GESTIÓN DE USUARIOS (SOLO ADMIN)
+   ──────────────────────────────────────────────────────
+   Crea una cuenta Firebase Auth nueva usando el
+   Client SDK (createUserWithEmailAndPassword).
+   Guarda el perfil del vendedor en cn_usuarios.
+   
+   IMPORTANTE: En producción, para crear usuarios sin
+   afectar la sesión del admin, idealmente se usaría
+   Firebase Admin SDK via Cloud Functions. Aquí usamos
+   una segunda instancia de Firebase App para aislar la
+   creación del usuario.
+══════════════════════════════════════════════════════ */
+
+// Segunda instancia de Firebase para crear usuarios sin cerrar sesión del admin
+let authSecundario = null;
+try {
+  const appSecundaria = initializeApp(FB, 'cosanostra-vendedor-creator');
+  authSecundario = getAuth(appSecundaria);
+} catch(e) {
+  // La app ya existe si se recarga, la reutilizamos
+  const { getApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+  try {
+    const appSecundaria = getApp('cosanostra-vendedor-creator');
+    authSecundario = getAuth(appSecundaria);
+  } catch(e2) { console.warn('Auth secundario no disponible:', e2); }
+}
+
+window.openVendedorModal = () => {
+  if (!isAdmin) { toast('Solo el administrador puede crear vendedores.', 'error'); return; }
+  ['vd-nombre','vd-email','vd-pass','vd-pass2'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('vd-err').classList.remove('show');
+  document.getElementById('vendedor-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('vd-nombre').focus(),150);
+};
+
+window.saveVendedor = async () => {
+  if (!isAdmin) return;
+  const err = document.getElementById('vd-err');
+  const btn = document.getElementById('vd-save-btn');
+  err.classList.remove('show');
+
+  const nombre = document.getElementById('vd-nombre').value.trim();
+  const email  = document.getElementById('vd-email').value.trim();
+  const pass   = document.getElementById('vd-pass').value;
+  const pass2  = document.getElementById('vd-pass2').value;
+
+  if (!nombre || !email || !pass || !pass2) {
+    err.textContent = 'Completa todos los campos.';
+    err.classList.add('show'); return;
+  }
+  if (pass !== pass2) {
+    err.textContent = 'Las contraseñas no coinciden.';
+    err.classList.add('show'); return;
+  }
+  if (pass.length < 6) {
+    err.textContent = 'La contraseña debe tener mínimo 6 caracteres.';
+    err.classList.add('show'); return;
+  }
+
+  btn.disabled = true; btn.textContent = '⟳ Creando cuenta...';
+
+  try {
+    let nuevoUID = null;
+
+    if (authSecundario) {
+      // Crear en instancia secundaria (no cierra sesión del admin)
+      const cred = await createUserWithEmailAndPassword(authSecundario, email, pass);
+      nuevoUID = cred.user.uid;
+      await signOut(authSecundario); // cerrar sesión del usuario recién creado en la instancia secundaria
+    } else {
+      // Fallback: no tenemos instancia secundaria disponible
+      throw new Error('No se pudo inicializar el auth secundario. Recarga la página e intenta de nuevo.');
+    }
+
+    // Guardar perfil en Firestore
+    await setDoc(doc(db, 'cn_usuarios', nuevoUID), {
+      uid: nuevoUID,
+      nombre,
+      email,
+      rol: 'vendedor',
+      activo: true,
+      creadoEn: serverTimestamp(),
+      creadoPor: currentUserUID,
+    });
+
+    document.getElementById('vendedor-modal').classList.remove('open');
+    toast(`✓ Vendedor "${nombre}" creado exitosamente.`, 'success');
+  } catch (e) {
+    let msg = e.message;
+    if (e.code === 'auth/email-already-in-use') msg = 'Este correo ya está registrado.';
+    if (e.code === 'auth/invalid-email') msg = 'Correo electrónico inválido.';
+    if (e.code === 'auth/weak-password') msg = 'Contraseña muy débil (mín. 6 caracteres).';
+    err.textContent = '⚠ ' + msg;
+    err.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Crear Vendedor →';
+  }
+};
+
+function renderVendedores() {
+  const tbody = document.getElementById('vendedores-tbody');
+  if (!tbody) return;
+
+  // Mostrar admin primero, luego vendedores de cn_usuarios
+  const allUsers = [
+    {
+      id: ADMIN_UID,
+      nombre: 'Administrador',
+      email: auth.currentUser?.email || '—',
+      rol: 'admin',
+      activo: true,
+      creadoEn: null,
+      esAdmin: true
+    },
+    ...usuarios
+  ];
+
+  if (allUsers.length === 1) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:32px;"><div class="empty-state" style="border:none;"><div class="empty-icon">◉</div><div class="empty-text">Sin vendedores registrados</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = allUsers.map(u => {
+    const f = u.creadoEn?.toDate ? u.creadoEn.toDate() : null;
+    const fechaStr = f ? f.toLocaleString('es-MX') : '—';
+    const rolBadge = u.rol === 'admin' || u.esAdmin
+      ? `<span class="role-badge admin">Admin</span>`
+      : `<span class="role-badge vendedor">Vendedor</span>`;
+    const estadoBadge = u.activo !== false
+      ? `<span class="status-badge paid">Activo</span>`
+      : `<span class="status-badge overdue">Inactivo</span>`;
+    const acciones = u.esAdmin
+      ? `<span style="font-family:var(--font-mono);font-size:8px;color:var(--muted)">—</span>`
+      : `<button class="btn-danger" onclick="desactivarVendedor('${u.id}','${u.nombre}',${u.activo})">
+           ${u.activo !== false ? '⊘ Desactivar' : '✓ Activar'}
+         </button>`;
+
+    return `<tr>
+      <td><strong style="color:var(--paper)">${u.email||'—'}</strong></td>
+      <td>${u.nombre||'—'}</td>
+      <td>${rolBadge}</td>
+      <td class="td-mono" style="font-size:9px">${fechaStr}</td>
+      <td>${estadoBadge}</td>
+      <td>${acciones}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.desactivarVendedor = async (id, nombre, activo) => {
+  const accion = activo !== false ? 'desactivar' : 'activar';
+  if (!confirm(`¿${accion.charAt(0).toUpperCase()+accion.slice(1)} al vendedor "${nombre}"?\n\n${activo !== false ? 'El vendedor no podrá iniciar sesión.' : 'El vendedor podrá iniciar sesión nuevamente.'}`)) return;
+  try {
+    await updateDoc(doc(db, 'cn_usuarios', id), { activo: activo !== false ? false : true });
+    toast(`Vendedor "${nombre}" ${activo !== false ? 'desactivado' : 'activado'}.`, 'info');
+    // Nota: para bloquear login real, necesitarías Firebase Admin SDK/Cloud Functions
+    // Este toggle es visual; el Admin SDK puede deshabilitar auth accounts
+    if (activo !== false) {
+      toast('Nota: Para bloquear el acceso completamente, deshabilita la cuenta en Firebase Console > Authentication.', 'info');
+    }
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+};
+
+/* ══ MÉTRICAS ══ */
+window.calcMetrics = () => {
+  const totalVendido   = cajaData.totalVendido || 0;
+  const totalCosto     = cajaData.totalCosto || 0;
+  const totalGastos    = calcTotalGastosHistorico();
+  const totalReinv     = calcTotalReinversionesHistorico();
+  const pendCred       = creditos.filter(c=>c.estado==='pendiente').reduce((s,c)=>s+(c.monto||0),0);
+  const num            = cajaData.numVentas || 0;
+  const ganancia       = calcGananciaNeta();
+  const efectivo       = calcEfectivoReal();
+  const roi            = totalCosto > 0 ? (ganancia/totalCosto)*100 : 0;
+  const ticket         = num > 0 ? totalVendido/num : 0;
+  const margen         = totalVendido > 0 ? (ganancia/totalVendido)*100 : 0;
+  const entradas       = cajaData.totalEntradas || 0;
+  const cambios        = cajaData.totalCambioDevuelto || 0;
+
   const set = (id, val, cls) => {
     const el = document.getElementById(id); if(!el) return;
     el.textContent = val; if(cls) el.className = cls;
   };
-  set('m-formula-entradas',  fmt(entradas));
-  set('m-formula-cambios',   fmt(cambios));
-  set('m-formula-gastos',    fmt(totalGastos));
-  set('m-formula-resultado', fmt(efectivo));
 
-  // ── Valores principales ──
-  set('m-efectivo', fmt(efectivo));
-  set('m-ganancia', fmt(ganancia), 'roi-cell-value ' + (ganancia>=0?'success':'danger'));
-  set('m-roi',      pct(roi),      'roi-cell-value ' + (roi>=0?'gold':'danger'));
-  set('m-inv-valor',fmt(invValor));
+  // Fórmula efectivo
+  set('m-formula-entradas',       fmt(entradas));
+  set('m-formula-cambios',        fmt(cambios));
+  set('m-formula-gastos',         fmt(totalGastos));
+  set('m-formula-reinversiones',  fmt(totalReinv));
+  set('m-formula-resultado',      fmt(efectivo));
+
+  // Fórmula ganancia
+  set('m-formula-vendido',   fmt(totalVendido));
+  set('m-formula-costo',     fmt(totalCosto));
+  set('m-formula-gastos2',   fmt(totalGastos));
+  set('m-formula-ganancia',  fmt(ganancia));
+
+  // ROI cells
+  set('m-efectivo',     fmt(efectivo));
+  set('m-ganancia',     fmt(ganancia),  'roi-cell-value ' + (ganancia>=0?'success':'danger'));
+  set('m-roi',          pct(roi),       'roi-cell-value ' + (roi>=0?'gold':'danger'));
+  set('m-reinversiones',fmt(totalReinv));
+
+  // Métricas grid
   set('m-bruto',    fmt(totalVendido));
   set('m-gastos',   fmt(totalGastos));
   set('m-creditos', fmt(pendCred));
@@ -2083,7 +2730,7 @@ window.calcMetrics = () => {
   set('m-ticket',   fmt(ticket));
   set('m-margen',   pct(margen));
 
-  // ── Top productos ──
+  // Top productos
   const prodMap={};
   ventas.forEach(v=>{
     (v.items||[]).forEach(item=>{
@@ -2132,20 +2779,12 @@ function renderChartHoras(){
         label:'# Ventas',
         data:hourData,
         backgroundColor:hourData.map(v=>v===Math.max(...hourData)?'rgba(200,152,10,0.9)':'rgba(200,152,10,0.3)'),
-        borderColor:'rgba(200,152,10,0.5)',
-        borderWidth:1,
-        yAxisID:'y',
+        borderColor:'rgba(200,152,10,0.5)',borderWidth:1,yAxisID:'y',
       },{
-        label:'Ingresos $',
-        data:hourRevenue,
-        type:'line',
-        borderColor:'rgba(40,199,111,0.7)',
-        backgroundColor:'rgba(40,199,111,0.08)',
-        borderWidth:2,
-        pointRadius:3,
-        pointBackgroundColor:'rgba(40,199,111,0.9)',
-        fill:true,tension:0.4,
-        yAxisID:'y1',
+        label:'Ingresos $',data:hourRevenue,type:'line',
+        borderColor:'rgba(40,199,111,0.7)',backgroundColor:'rgba(40,199,111,0.08)',
+        borderWidth:2,pointRadius:3,pointBackgroundColor:'rgba(40,199,111,0.9)',
+        fill:true,tension:0.4,yAxisID:'y1',
       }]
     },
     options:{
@@ -2175,7 +2814,7 @@ function renderChartCategorias(){
     });
   });
   const labels=Object.keys(catMap), data=Object.values(catMap);
-  const palette=['#C8980A','#28C76F','#4A9EF5','#9B59B6','#E84040','#D4A017','#E8B420','#2C3347'];
+  const palette=['#C8980A','#28C76F','#4A9EF5','#9B59B6','#E84040','#D4A017','#1ABC9C','#2C3347'];
   if(chartCats)chartCats.destroy();
   if(!labels.length){
     const ctx=canvas.getContext('2d');
@@ -2199,25 +2838,27 @@ function renderChartCategorias(){
 
 /* ══ CORTE DE CAJA ══ */
 window.openCorteModal = () => {
-  const totalGastos   = calcTotalGastosHistorico();      // ← helper centralizado
+  const totalGastos   = calcTotalGastosHistorico();
+  const totalReinv    = calcTotalReinversionesHistorico();
   const totalEntradas = cajaData.totalEntradas || 0;
   const cambioTotal   = cajaData.totalCambioDevuelto || 0;
-  const esperado      = totalEntradas - cambioTotal - totalGastos;  // ← misma fórmula que calcEfectivoReal
+  const esperado      = totalEntradas - cambioTotal - totalGastos - totalReinv; // ← incluye reinversiones
 
-  document.getElementById('corte-entradas').textContent     = fmt(totalEntradas);
-  document.getElementById('corte-cambio-total').textContent = '−'+fmt(cambioTotal);
-  document.getElementById('corte-gastos').textContent       = '−'+fmt(totalGastos);
-  document.getElementById('corte-esperado').textContent     = fmt(esperado);
-  document.getElementById('corte-fisico').value             = '';
+  document.getElementById('corte-entradas').textContent      = fmt(totalEntradas);
+  document.getElementById('corte-cambio-total').textContent  = '−'+fmt(cambioTotal);
+  document.getElementById('corte-gastos').textContent        = '−'+fmt(totalGastos);
+  document.getElementById('corte-reinversiones').textContent = '−'+fmt(totalReinv);
+  document.getElementById('corte-esperado').textContent      = fmt(esperado);
+  document.getElementById('corte-fisico').value              = '';
   document.getElementById('corte-resultado-box').style.display='none';
-  document.getElementById('corte-save-btn').disabled        = true;
+  document.getElementById('corte-save-btn').disabled         = true;
   document.getElementById('corte-modal').classList.add('open');
 };
 
 window.calcCorte = () => {
-  const fisico    = parseFloat(document.getElementById('corte-fisico').value)||0;
-  const esperado  = calcEfectivoReal();                   // ← mismo helper centralizado
-  const diff      = fisico - esperado;
+  const fisico   = parseFloat(document.getElementById('corte-fisico').value)||0;
+  const esperado = calcEfectivoReal(); // mismo helper que en todo el sistema
+  const diff     = fisico - esperado;
 
   const box=document.getElementById('corte-resultado-box');
   const res=document.getElementById('corte-resultado');
@@ -2231,22 +2872,23 @@ window.calcCorte = () => {
 };
 
 window.saveCorte = async () => {
-  const fisico    = parseFloat(document.getElementById('corte-fisico').value)||0;
+  const fisico        = parseFloat(document.getElementById('corte-fisico').value)||0;
   const totalGastos   = calcTotalGastosHistorico();
+  const totalReinv    = calcTotalReinversionesHistorico();
   const totalEntradas = cajaData.totalEntradas || 0;
   const cambioTotal   = cajaData.totalCambioDevuelto || 0;
-  const esperado  = totalEntradas - cambioTotal - totalGastos;
+  const esperado      = totalEntradas - cambioTotal - totalGastos - totalReinv;
   const btn=document.getElementById('corte-save-btn');
   btn.disabled=true; btn.textContent='⟳ Guardando...';
   try{
     await addDoc(COL_CORTES,{
       fecha:serverTimestamp(),
-      totalEntradas,
-      cambioDevuelto:cambioTotal,
-      gastos:totalGastos,
+      totalEntradas, cambioDevuelto:cambioTotal,
+      gastos:totalGastos, reinversiones:totalReinv,
       esperado, fisico,
       diferencia:fisico-esperado,
-      tipo:(fisico-esperado)>0?'sobrante':(fisico-esperado)<0?'faltante':'exacto'
+      tipo:(fisico-esperado)>0?'sobrante':(fisico-esperado)<0?'faltante':'exacto',
+      creadoPor: currentUserUID,
     });
     document.getElementById('corte-modal').classList.remove('open');
     toast('Corte de caja guardado.','success');
@@ -2262,13 +2904,14 @@ function toast(msg,type='info'){
   t.className=`toast ${type}`;
   t.innerHTML=`<span class="toast-icon">${icons[type]||'◈'}</span><span class="toast-text">${msg}</span>`;
   c.appendChild(t);
-  setTimeout(()=>{t.style.animation='toastOut 0.3s ease forwards';setTimeout(()=>t.remove(),300);},3500);
+  setTimeout(()=>{t.style.animation='toastOut 0.3s ease forwards';setTimeout(()=>t.remove(),300);},4000);
 }
 window.toast=toast;
 
 /* ── Modal click-outside ── */
-['product-modal','pay-modal','gasto-modal','corte-modal'].forEach(id=>{
-  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+['product-modal','pay-modal','gasto-modal','corte-modal','reinversion-modal','vendedor-modal'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 
 /* ── Init fallback ── */
